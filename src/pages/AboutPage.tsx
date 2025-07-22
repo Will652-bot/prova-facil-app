@@ -6,7 +6,7 @@ export const AboutPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-in">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Sobre o EvalExpress</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Sobre o ProvaFacíl</h1>
         <p className="mt-1 text-gray-500">
           Conheça mais sobre nossa plataforma de avaliação
         </p>
@@ -19,7 +19,7 @@ export const AboutPage: React.FC = () => {
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Nossa Missão</h2>
               <p className="mt-2 text-gray-600">
-                O EvalExpress nasceu com a missão de simplificar o processo de avaliação para professores,
+                A ProvaFacíl nasceu com a missão de simplificar o processo de avaliação para professores,
                 permitindo que eles foquem mais no que realmente importa: o desenvolvimento dos alunos.
               </p>
             </div>
@@ -59,7 +59,7 @@ export const AboutPage: React.FC = () => {
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Contato</h3>
             <div className="flex items-center space-x-3">
               <Mail className="h-5 w-5 text-primary-500" />
-              <p className="text-gray-600">Entre em contato: evalexpress.app@gmail.com</p>
+              <p className="text-gray-600">Entre em contato: provafacil.app@gmail.com</p>
             </div>
             <div className="flex items-center space-x-3 mt-2">
               <Heart className="h-5 w-5 text-red-500" />
