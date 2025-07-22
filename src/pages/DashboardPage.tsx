@@ -181,7 +181,7 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    🎓 Quer conhecer o EvalExpress na prática?
+                    🎓 Quer conhecer a ProvaFacíl na prática?
                   </h3>
                   <p className="text-gray-600 mt-1">
                     Clique aqui para acessar os dados de demonstração!
