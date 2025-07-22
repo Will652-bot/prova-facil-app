@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 // ✅ Use environment variables from Netlify / Vite
@@ -25,12 +26,12 @@ export const supabase = createClient(
       autoRefreshToken: true,
       detectSessionInUrl: true,
       flowType: 'pkce',
-      storageKey: 'evalexpress-auth-token',
+      storageKey: 'provafacil-auth-token',
       debug: import.meta.env.MODE === 'development'
     },
     global: {
       headers: {
-        'X-Client-Info': 'evalexpress-web'
+        'X-Client-Info': 'provafacil-web'
       }
     }
   }
