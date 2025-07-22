@@ -13,7 +13,7 @@ export const RegisterPage: React.FC = () => {
             <GraduationCap className="h-12 w-12 text-primary-600" />
           </div>
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
-            Crie sua conta no EvalExpress
+            Crie sua conta na ProvaFacíl
           </h1>
           <p className="mt-2 text-gray-600">
             Comece a gerenciar avaliações de forma eficiente
