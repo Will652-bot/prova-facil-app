@@ -13,7 +13,7 @@ const LoginPage: React.FC = () => {
             <GraduationCap className="h-12 w-12 text-primary-600" />
           </div>
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
-            Bem-vindo ao EvalExpress
+            Bem-vindo a ProvaFacíl
           </h1>
           <p className="mt-2 text-gray-600">
             Entre para gerenciar suas avaliações
