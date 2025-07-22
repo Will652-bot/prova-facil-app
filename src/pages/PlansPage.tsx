@@ -120,7 +120,7 @@ export const PlansPage: React.FC = () => {
                   🎉 Parabéns! Seu plano Pro está ativo!
                 </h3>
                 <p className="text-success-700 mt-1">
-                  Agora você tem acesso a todas as funcionalidades premium do EvalExpress.
+                  Agora você tem acesso a todas as funcionalidades premium da ProvaFacíl.
                 </p>
               </div>
             </div>
@@ -226,7 +226,7 @@ export const PlansPage: React.FC = () => {
               </p>
               <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                 <Button variant="outline">
-                  <a href="mailto:evalexpress.app@gmail.com">
+                  <a href="mailto:provafacil.app@gmail.com">
                     Contatar Suporte
                   </a>
                 </Button>
