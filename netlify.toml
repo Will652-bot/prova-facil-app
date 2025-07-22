@@ -10,14 +10,14 @@
   to = "/index.html"
   status = 200
 
-# Force deployment to your specific EvalExpress site
+# Force deployment to your specific ProvaFacíl site
 [context.production]
   command = "npm run build"
 
-# Site configuration - VOTRE PROJET EVALEXPRESS
+# Site configuration - VOTRE PROJET PROVAFACÍL
 [site]
   id = "f140b985-1a5c-442b-a2b4-bfb8388dde30"
-  name = "evalexpress-app"
+  name = "provafacil-app"
 
 # Additional Netlify configuration to force site targeting
 [template.environment]
