@@ -262,15 +262,15 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      //<div>
-        //<h2 className="text-xl font-bold">Tipo de ensino</h2>
-        //<TeacherTypeSelector
-          //selectedTypes={selectedTeacherTypes}
-          //setSelectedTypes={(types) => {
-            //if (types.length <= 2) setSelectedTeacherTypes(types);
-          //}}
-        //>
-      //</div>
+      <div>
+        <h2 className="text-xl font-bold">Tipo de ensino</h2>
+        <TeacherTypeSelector
+          selectedTypes={selectedTeacherTypes}
+          setSelectedTypes={(types) => {
+            if (types.length <= 2) setSelectedTeacherTypes(types);
+          }}
+        />
+      </div>
 
       <div>
         <h2 className="text-xl font-bold mt-6">Dados de demonstração</h2>
