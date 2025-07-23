@@ -88,7 +88,7 @@ export const TeacherTypeSelector: React.FC<TeacherTypeSelectorProps> = ({ select
 
  // return (
  //   <div className="space-y-4">
- //     <Label className="text-base font-semibold"></Label>
+ //     <Label className="text-base font-semibold">Tipo de ensino</Label>
  //     <div className="flex flex-wrap gap-2">
  //       {teacherTypes.map((type) => (
  //         <Button
