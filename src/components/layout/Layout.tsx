@@ -19,7 +19,7 @@ export const Layout: React.FC = () => {
             <div className="flex items-center mb-4 md:mb-0">
               <GraduationCap className="h-6 w-6 mr-2 text-primary-600" />
               <p className="text-sm text-gray-500">
-                &copy; {new Date().getFullYear()} EvalExpress. Todos os direitos reservados.
+                &copy; {new Date().getFullYear()} ProvaFacíl. Todos os direitos reservados.
               </p>
             </div>
             <div className="flex space-x-4">
