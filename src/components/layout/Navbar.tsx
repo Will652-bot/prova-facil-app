@@ -66,7 +66,7 @@ export const Navbar: React.FC = () => {
             <div className="flex-shrink-0 flex items-center">
               <Link to="/dashboard" className="flex items-center space-x-2">
                 <GraduationCap className="h-8 w-8 text-primary-600" />
-                <span className="text-xl font-bold text-gray-900 hidden sm:block">EvalExpress</span>
+                <span className="text-xl font-bold text-gray-900 hidden sm:block">ProvaFacíl</span>
               </Link>
             </div>
             
