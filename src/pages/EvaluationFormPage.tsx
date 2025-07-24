@@ -710,7 +710,7 @@ export const EvaluationFormPage: React.FC = () => {
     setConfirmDialog({
       isOpen: true,
       title: 'Excluir Avaliação',
-      message: `Tem certeza que deseja excluir a avaliação "${evaluationTitleName}"? Esta ação não pode ser desfeita e excluirá todas as avaliações associées.`
+      message: `Tem certeza que deseja excluir a avaliação "${evaluationTitleName}"? Esta ação não pode ser desfeita e excluirá todas les avaliações associées.`
     });
   };
 
@@ -826,7 +826,8 @@ export const EvaluationFormPage: React.FC = () => {
                   setSelectedClass(e.target.value);
                 }}
                 required
-                disabled={isEditing} {/* Désactivé en mode édition pour maintenir la cohérence du groupe */}
+                // Désactivé en mode édition pour maintenir la cohérence du groupe
+                disabled={isEditing}
               >
                 <option value="">Selecione uma turma</option>
                 {classes.map((c) => (
