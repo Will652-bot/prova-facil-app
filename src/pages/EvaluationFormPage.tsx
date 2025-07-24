@@ -48,7 +48,7 @@ export const EvaluationFormPage: React.FC = () => {
   // États de chargement
   const [loading, setLoading] = useState(true); // Initialisez à true pour le chargement initial
   const [loadingPDF, setLoadingPDF] = useState(false);
-  const isInitialLoad = useRef(true); // Pour gérer le chargement initial une seule fois
+  // isInitialLoad n'est plus nécessaire si le useEffect principal est bien géré
 
   // États des données
   const [classes, setClasses] = useState<any[]>([]);
@@ -207,16 +207,10 @@ export const EvaluationFormPage: React.FC = () => {
   // --- FIN Fonctions de récupération de données ---
 
 
-  // --- Effet principal pour le chargement initial et la gestion des données du formulaire ---
+  // --- Effet principal pour le chargement initial de TOUTES les données du formulaire ---
   useEffect(() => {
-    const loadFormData = async () => {
-      // Si c'est un re-rendu après le chargement initial et que le chargement est terminé, ne rien faire.
-      // Cela est crucial pour éviter les re-déclenchements inutiles après la première exécution complète.
-      if (!isInitialLoad.current && !loading) {
-        return;
-      }
-      
-      setLoading(true);
+    const loadAllInitialData = async () => {
+      setLoading(true); // Active le chargement au début de cet effet
       try {
         // 1. Charger les données de base (classes, critères, titres) en parallèle
         const [classesData, criteriaData, evaluationTitlesData] = await Promise.all([
@@ -227,13 +221,13 @@ export const EvaluationFormPage: React.FC = () => {
 
         setClasses(classesData);
         setCriteria(criteriaData);
-        setAvailableCriteria(criteriaData); // Initialise availableCriteria avec tous les critères
+        setAvailableCriteria(criteriaData);
         setEvaluationTitles(evaluationTitlesData);
 
-        let currentClassId = '';
-        let currentCriterionObj = null;
-        let currentEvaluationTitleId = '';
-        let currentFormDate = date; // Utilise la date par défaut ou celle de l'état si déjà définie
+        let initialClassId = '';
+        let initialCriterionObj = null;
+        let initialEvaluationTitleId = '';
+        let initialFormDate = date; // Utilise la date par défaut de l'état (aujourd'hui)
 
         if (isEditing) {
           if (!id) {
@@ -260,74 +254,60 @@ export const EvaluationFormPage: React.FC = () => {
 
           const { date: groupDate, class_id: groupClassId, criterion_id: groupCriterionId, evaluation_title_id: groupEvaluationTitleId } = singleEvaluationRecord;
 
-          currentFormDate = new Date(groupDate).toISOString().split('T')[0];
-          currentClassId = groupClassId;
-          currentEvaluationTitleId = groupEvaluationTitleId || '';
+          initialFormDate = new Date(groupDate).toISOString().split('T')[0];
+          initialClassId = groupClassId;
+          initialEvaluationTitleId = groupEvaluationTitleId || '';
           
           const criterionFound = criteriaData.find((c: any) => c.id === groupCriterionId);
-          currentCriterionObj = criterionFound || null; // Définir l'objet critère
+          initialCriterionObj = criterionFound || null;
 
           // Mettre à jour les états du formulaire avec les données du groupe
-          setDate(currentFormDate);
-          setSelectedClass(currentClassId);
-          setSelectedEvaluationTitleId(currentEvaluationTitleId);
-          setSelectedCriterion(currentCriterionObj); // Mettre à jour l'état du critère
+          setDate(initialFormDate);
+          setSelectedClass(initialClassId);
+          setSelectedEvaluationTitleId(initialEvaluationTitleId);
+          setSelectedCriterion(initialCriterionObj);
 
           // Mettre à jour availableCriteria en fonction du titre du groupe
-          if (currentEvaluationTitleId) {
-            const filteredCriteria = await fetchCriteriaForTitleData(currentEvaluationTitleId, criteriaData);
+          if (initialEvaluationTitleId) {
+            const filteredCriteria = await fetchCriteriaForTitleData(initialEvaluationTitleId, criteriaData);
             setAvailableCriteria(filteredCriteria);
           } else {
             setAvailableCriteria(criteriaData);
           }
 
-        } else { // Mode "Nouvelles Avaliações"
-          // Initialisation des valeurs par défaut si non en édition
-          // Si un titre d'évaluation est déjà sélectionné (par exemple, via un paramètre d'URL ou initialement)
-          if (selectedEvaluationTitleId) {
-            const title = evaluationTitlesData.find((t: any) => t.id === selectedEvaluationTitleId);
-            if (title) {
-              setEvaluationTitleName(title.title);
-              setShowTitleField(false);
-              const filteredCriteria = await fetchCriteriaForTitleData(selectedEvaluationTitleId, criteriaData);
-              setAvailableCriteria(filteredCriteria);
-            }
-          } else {
-            setEvaluationTitleName('');
-            setShowTitleField(true);
-            setAvailableCriteria(criteriaData);
-          }
+        } else { // Mode "Nouvelles Avaliações" - initialisation des sélecteurs si des valeurs par défaut sont souhaitées
+            // Si vous voulez pré-sélectionner une classe/titre/critère par défaut, faites-le ici.
+            // Sinon, ils resteront vides et l'utilisateur devra les choisir.
         }
 
         // Charger les étudiants et les évaluations une fois que la classe et le critère sont définis
-        // Utiliser les valeurs `currentX` car les `setX` sont asynchrones.
-        if (currentClassId && currentCriterionObj?.id) {
-          const studentsData = await fetchStudentsData(currentClassId);
+        if (initialClassId && initialCriterionObj?.id) {
+          const studentsData = await fetchStudentsData(initialClassId);
           setStudents(studentsData);
 
           let finalEvaluations: StudentEvaluationData[] = [];
 
           if (isEditing) {
-            const existingEvaluations = await fetchEvaluationsForGroup(currentClassId, currentCriterionObj.id, currentFormDate, currentEvaluationTitleId);
+            const existingEvaluations = await fetchEvaluationsForGroup(initialClassId, initialCriterionObj.id, initialFormDate, initialEvaluationTitleId);
             finalEvaluations = studentsData.map((student: any) => {
               const existing = existingEvaluations.find((e: any) => e.student_id === student.id);
               return {
                 student_id: student.id,
                 student_name: `${student.first_name} ${student.last_name}`,
-                criterion_id: currentCriterionObj.id,
+                criterion_id: initialCriterionObj.id,
                 value: existing?.value?.toString() || '',
                 comments: existing?.comments || '',
                 id: existing?.id
               };
             });
           } else { // Mode création
-            const latestEvaluations = await fetchLatestEvaluationsForPreFill(currentClassId, currentCriterionObj.id, currentEvaluationTitleId, currentFormDate);
+            const latestEvaluations = await fetchLatestEvaluationsForPreFill(initialClassId, initialCriterionObj.id, initialEvaluationTitleId, initialFormDate);
             finalEvaluations = studentsData.map((student: any) => {
               const existing = latestEvaluations.find((e: any) => e.student_id === student.id);
               return {
                 student_id: student.id,
                 student_name: `${student.first_name} ${student.last_name}`,
-                criterion_id: currentCriterionObj.id,
+                criterion_id: initialCriterionObj.id,
                 value: existing?.value?.toString() || '',
                 comments: existing?.comments || '',
                 id: existing?.id
@@ -336,15 +316,14 @@ export const EvaluationFormPage: React.FC = () => {
           }
           setEvaluations(finalEvaluations);
         } else {
-          // Si la classe ou le critère n'est pas encore sélectionné, initialiser les étudiants et évaluations à vide
           setStudents([]);
           setEvaluations([]);
         }
 
         // Charger le PDF attaché si les IDs sont disponibles
-        if (currentEvaluationTitleId && currentClassId) {
+        if (initialEvaluationTitleId && initialClassId) {
           setLoadingPDF(true);
-          const pdfData = await fetchAttachedPDFData(currentEvaluationTitleId, currentClassId);
+          const pdfData = await fetchAttachedPDFData(initialEvaluationTitleId, initialClassId);
           setAttachedPDF(pdfData);
           setLoadingPDF(false);
         } else {
@@ -356,30 +335,35 @@ export const EvaluationFormPage: React.FC = () => {
         toast.error('Erro ao carregar formulário.');
         navigate('/evaluations');
       } finally {
-        setLoading(false);
-        isInitialLoad.current = false; // Marquer le chargement initial comme terminé
+        setLoading(false); // Désactive le chargement une fois tout terminé
       }
     };
 
-    // Déclenche le chargement des données lorsque l'ID de l'URL ou l'utilisateur changent.
-    // Les autres dépendances (date, selectedClass, etc.) sont gérées par des useEffects secondaires.
-    loadFormData();
-  }, [id, user?.id, isEditing, navigate, date, // `date` est une dépendance pour le pré-remplissage en mode création
+    // Déclenche le chargement initial des données.
+    // Cet effet ne dépend que de 'id' et 'user.id' pour le déclenchement initial.
+    // 'date' n'est pas une dépendance ici car elle est gérée par l'utilisateur.
+    // Toutes les fonctions de fetch sont des useCallback stables.
+    loadAllInitialData();
+  }, [id, user?.id, isEditing, navigate,
       fetchClassesData, fetchCriteriaData, fetchEvaluationTitlesData,
       fetchAttachedPDFData, fetchStudentsData, fetchEvaluationsForGroup,
       fetchLatestEvaluationsForPreFill, fetchCriteriaForTitleData
   ]);
 
 
-  // Effet pour gérer les changements de selectedClass, selectedCriterion, selectedEvaluationTitleId APRÈS le chargement initial
-  // Cet effet est crucial pour les interactions utilisateur qui modifient les sélecteurs.
+  // Effet pour gérer les changements des sélecteurs de formulaire (classe, critère, titre, date)
+  // et recharger les données dynamiques (étudiants, évaluations, PDF) en conséquence.
   useEffect(() => {
-    if (isInitialLoad.current) return; // Ne pas exécuter pendant le chargement initial
+    // Ne pas exécuter cet effet si le chargement initial est toujours en cours
+    // ou si les données de base (classes, criteria, evaluationTitles) ne sont pas encore chargées.
+    if (loading || classes.length === 0 || criteria.length === 0 || evaluationTitles.length === 0) {
+      return;
+    }
 
-    const handleFormSelectorsChange = async () => {
-      setLoading(true); // Active le chargement pendant la mise à jour des données
+    const handleDynamicFormChanges = async () => {
+      setLoading(true); // Active le chargement pour les mises à jour dynamiques
       try {
-        // Mettre à jour les critères disponibles si le titre change
+        // 1. Mettre à jour les critères disponibles si le titre change
         if (selectedEvaluationTitleId) {
           const filteredCriteria = await fetchCriteriaForTitleData(selectedEvaluationTitleId, criteria);
           setAvailableCriteria(filteredCriteria);
@@ -387,16 +371,31 @@ export const EvaluationFormPage: React.FC = () => {
           setAvailableCriteria(criteria);
         }
 
-        // Charger les étudiants si la classe change
-        if (selectedClass) {
+        // 2. Charger les étudiants et les évaluations si la classe ou le critère change
+        if (selectedClass && selectedCriterion?.id) {
           const studentsData = await fetchStudentsData(selectedClass);
           setStudents(studentsData);
 
-          // Pré-remplir les évaluations si toutes les conditions sont remplies
-          // Cette logique est pour le mode "Nouvelle Évaluation"
-          if (!isEditing && selectedClass && selectedCriterion?.id && selectedEvaluationTitleId && studentsData.length > 0 && date) {
+          let updatedEvaluations: StudentEvaluationData[] = [];
+
+          if (isEditing) {
+            // En mode édition, recharger les évaluations spécifiques au groupe
+            const existingEvaluations = await fetchEvaluationsForGroup(selectedClass, selectedCriterion.id, date, selectedEvaluationTitleId);
+            updatedEvaluations = studentsData.map((student: any) => {
+              const existing = existingEvaluations.find((e: any) => e.student_id === student.id);
+              return {
+                student_id: student.id,
+                student_name: `${student.first_name} ${student.last_name}`,
+                criterion_id: selectedCriterion.id,
+                value: existing?.value?.toString() || '',
+                comments: existing?.comments || '',
+                id: existing?.id
+              };
+            });
+          } else { // Mode création
+            // Pré-remplir avec les dernières évaluations pour la date sélectionnée
             const latestEvaluations = await fetchLatestEvaluationsForPreFill(selectedClass, selectedCriterion.id, selectedEvaluationTitleId, date);
-            setEvaluations(studentsData.map((student: any) => {
+            updatedEvaluations = studentsData.map((student: any) => {
               const existing = latestEvaluations.find((e: any) => e.student_id === student.id);
               return {
                 student_id: student.id,
@@ -406,26 +405,17 @@ export const EvaluationFormPage: React.FC = () => {
                 comments: existing?.comments || '',
                 id: existing?.id
               };
-            }));
-          } else if (!isEditing) { // Si des conditions manquent en mode création, initialiser les évaluations vides
-             setEvaluations(studentsData.map((student: any) => ({
-              student_id: student.id,
-              student_name: `${student.first_name} ${student.last_name}`,
-              criterion_id: selectedCriterion?.id || '',
-              value: '',
-              comments: ''
-            })));
+            });
           }
-          // En mode édition, les évaluations sont déjà chargées par loadFormData,
-          // et ne devraient être rechargées que si le critère change spécifiquement.
-          // La logique de rechargement spécifique au critère est gérée dans handleCriterionChange si nécessaire.
+          setEvaluations(updatedEvaluations);
 
         } else {
+          // Si la classe ou le critère n'est pas sélectionné, vider les étudiants et les évaluations
           setStudents([]);
           setEvaluations([]);
         }
 
-        // Charger le PDF attaché
+        // 3. Charger le PDF attaché
         if (selectedEvaluationTitleId && selectedClass) {
           setLoadingPDF(true);
           const pdfData = await fetchAttachedPDFData(selectedEvaluationTitleId, selectedClass);
@@ -436,24 +426,24 @@ export const EvaluationFormPage: React.FC = () => {
         }
 
       } catch (error: any) {
-        console.error("Erreur lors de la mise à jour du formulaire:", error.message);
+        console.error("Erreur lors de la mise à jour dynamique du formulaire:", error.message);
         toast.error('Erro ao atualizar formulário.');
       } finally {
-        setLoading(false); // Désactive le chargement une fois la mise à jour terminée
+        setLoading(false); // Désactive le chargement une fois la mise à jour dynamique terminée
       }
     };
 
     // Déclenche cet effet lorsque les sélecteurs de formulaire changent (par interaction utilisateur)
-    // IMPORTANT : 'students' est retiré des dépendances pour éviter la boucle infinie.
-    // 'criteria' est une dépendance car fetchCriteriaForTitleData en a besoin.
+    // ou lorsque la date change.
+    handleDynamicFormChanges();
   }, [selectedClass, selectedCriterion, selectedEvaluationTitleId, date, isEditing, user,
-      criteria, evaluationTitles, // evaluationTitles est une dépendance pour trouver le titre
-      fetchCriteriaForTitleData, fetchStudentsData, fetchLatestEvaluationsForPreFill, fetchAttachedPDFData
+      classes.length, criteria, evaluationTitles, // Dépendances pour garantir que les données de base sont chargées et stables
+      fetchCriteriaForTitleData, fetchStudentsData, fetchEvaluationsForGroup,
+      fetchLatestEvaluationsForPreFill, fetchAttachedPDFData
   ]);
 
 
   // Effet pour auto-remplir le nom du titre d'évaluation affiché
-  // Dépendances : selectedEvaluationTitleId et evaluationTitles (pour trouver le titre)
   useEffect(() => {
     if (selectedEvaluationTitleId) {
       const selectedEvaluationTitle = evaluationTitles.find(
