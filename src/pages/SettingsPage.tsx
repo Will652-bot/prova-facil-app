@@ -263,7 +263,7 @@ export default function SettingsPage() {
       </div>
 
       <div>
-        <h2 className="text-xl font-bold">Tipo de ensino</h2>
+        /*<h2 className="text-xl font-bold">Tipo de ensino</h2>*/
         <TeacherTypeSelector
           selectedTypes={selectedTeacherTypes}
           setSelectedTypes={(types) => {
