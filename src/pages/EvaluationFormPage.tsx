@@ -710,7 +710,7 @@ export const EvaluationFormPage: React.FC = () => {
     setConfirmDialog({
       isOpen: true,
       title: 'Excluir Avaliação',
-      message: `Tem certeza que deseja excluir a avaliação "${evaluationTitleName}"? Esta ação não pode ser desfeita e excluirá todas les avaliações associées.`
+      message: `Tem certeza que deseja excluir a avaliação "${evaluationTitleName}"? Esta ação não pode ser desfeita e excluirá toutes les avaliações associées.`
     });
   };
 
@@ -826,7 +826,7 @@ export const EvaluationFormPage: React.FC = () => {
                   setSelectedClass(e.target.value);
                 }}
                 required
-                // Désactivé en mode édition pour maintenir la cohérence du groupe
+                {/* Désactivé en mode édition pour maintenir la cohérence du groupe */}
                 disabled={isEditing}
               >
                 <option value="">Selecione uma turma</option>
@@ -892,7 +892,8 @@ export const EvaluationFormPage: React.FC = () => {
                 value={selectedCriterion?.id || ''}
                 onChange={(e) => handleCriterionChange(e.target.value)}
                 required
-                disabled={isEditing && evaluations.length > 0} {/* Désactivé si en édition et des évaluations sont déjà chargées */}
+                {/* Désactivé si en édition et des évaluations sont déjà chargées */}
+                disabled={isEditing && evaluations.length > 0}
               >
                 <option value="">Selecione um critère</option>
                 {availableCriteria.map((c) => (
@@ -965,7 +966,7 @@ export const EvaluationFormPage: React.FC = () => {
           ) : selectedEvaluationTitleId && selectedClass ? (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <p className="text-sm text-gray-600 text-center">
-                Não há PDF anexado para esta combinação de título e turma.
+                Não há PDF anexado para esta combinação de título et turma.
               </p>
             </div>
           ) : null}
