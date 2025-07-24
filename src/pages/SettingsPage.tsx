@@ -263,8 +263,7 @@ export default function SettingsPage() {
       </div>
 
       <div>
-        {/* Suppression du commentaire mal formé et de la balise h2 redondante */}
-        <h2 className="text-xl font-bold">Tipo de ensino</h2> {/* Ce titre est maintenu ici pour la section */}
+        {/* SUPPRESSION DE LA BALISE H2 REDONDANTE */}
         <TeacherTypeSelector
           selectedTypes={selectedTeacherTypes}
           setSelectedTypes={(types) => {
