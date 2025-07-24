@@ -197,10 +197,10 @@ export default function SettingsPage() {
         toast.success(`Dados de demonstração criados com sucesso para ${createdCount} tipo(s)!`);
     } else if (!allSucceeded) {
         toast.error('O processo de geração de dados de demonstração foi concluído com erros.');
-    } else { // createdCount est 0 et allSucceeded est true (aucun novo tipo a criar)
+    } else { // createdCount est 0 et allSucceeded est true (aucun nouveau tipo a criar)
         toast.info('Nenhum dado de demonstração novo foi criado.');
     }
-    checkExistingDemoData(); // Re-vérifier l'état des dados de démo après tout
+    checkExistingDemoData(); // Re-vérifier l'état dos dados de démo depois de tudo
   };
 
   const deleteDemoData = async () => {
@@ -243,7 +243,7 @@ export default function SettingsPage() {
     } else { // deletedCount est 0 et allSucceeded est true (aucun tipo a excluir)
         toast.info('Nenhum dado de demonstração foi excluído.');
     }
-    checkExistingDemoData(); // Re-vérifier l'état das dados de démo depois de tudo
+    checkExistingDemoData(); // Re-vérifier l'état dos dados de démo depois de tudo
   };
 
   const hasAnyDemo = savedTeacherTypes.some((id) => demoDataStatus[id]);
