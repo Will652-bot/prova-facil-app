@@ -155,11 +155,11 @@ export default function SettingsPage() {
 
   const createDemoData = async () => {
     if (!user?.id || !user?.email) { // S'assurer que user.id et user.email sont disponibles
-      toast.error('Informações de l\'utilisateur incomplètes.');
+      toast.error('Informações de l\'utilisateur incompletas.');
       return;
     }
     let allSucceeded = true; // Drapeau pour le succès global
-    let createdCount = 0;   // Compteur des créations réussies
+    let createdCount = 0;    // Compteur des créations réussies
 
     for (const id of savedTeacherTypes) {
       if (!demoDataStatus[id]) { // Seulement si les données de démo n'existent pas encore pour ce type
@@ -197,7 +197,7 @@ export default function SettingsPage() {
         toast.success(`Dados de demonstração criados com sucesso para ${createdCount} tipo(s)!`);
     } else if (!allSucceeded) {
         toast.error('O processo de geração de dados de demonstração foi concluído com erros.');
-    } else { // createdCount est 0 et allSucceeded est true (aucun nouveau type à créer)
+    } else { // createdCount est 0 et allSucceeded est true (aucun novo tipo a criar)
         toast.info('Nenhum dado de demonstração novo foi criado.');
     }
     checkExistingDemoData(); // Re-vérifier l'état des dados de démo après tout
@@ -205,19 +205,19 @@ export default function SettingsPage() {
 
   const deleteDemoData = async () => {
     if (!user?.id || !user?.email) { // S'assurer que user.id et user.email sont disponibles
-      toast.error('Informações de l\'utilisateur incomplètes pour l\'exclusion.');
+      toast.error('Informações de l\'utilisateur incompletas para l\'exclusion.');
       return;
     }
     let allSucceeded = true; // Drapeau pour le succès global
-    let deletedCount = 0;   // Compteur des suppressions réussies
+    let deletedCount = 0;    // Compteur des suppressions réussies
 
     // MODIFICATION CLÉ ICI : Itérer sur selectedTeacherTypes au lieu de savedTeacherTypes
-    for (const id of selectedTeacherTypes) { 
+    for (const id of selectedTeacherTypes) {
       if (demoDataStatus[id]) { // Seulement si les données de démo existent pour ce type
         try {
           const res = await supabase.rpc('delete_demo_data_by_type', {
             p_user_id: user.id,
-            p_user_email: user.email, 
+            p_user_email: user.email,
             p_teachertype_id: id,
           });
           if (res.error) {
@@ -240,10 +240,10 @@ export default function SettingsPage() {
         toast.success(`Dados de demonstração excluídos com sucesso para ${deletedCount} tipo(s)!`);
     } else if (!allSucceeded) {
         toast.error('O processo de exclusão de dados de demonstração foi concluído com erros.');
-    } else { // deletedCount est 0 et allSucceeded est true (aucun type à supprimer)
+    } else { // deletedCount est 0 et allSucceeded est true (aucun tipo a excluir)
         toast.info('Nenhum dado de demonstração foi excluído.');
     }
-    checkExistingDemoData(); // Re-vérifier l'état das dados de démo après tout
+    checkExistingDemoData(); // Re-vérifier l'état das dados de démo depois de tudo
   };
 
   const hasAnyDemo = savedTeacherTypes.some((id) => demoDataStatus[id]);
@@ -263,7 +263,8 @@ export default function SettingsPage() {
       </div>
 
       <div>
-        /*<h2 className="text-xl font-bold">Tipo de ensino</h2>*/
+        {/* Suppression du commentaire mal formé et de la balise h2 redondante */}
+        <h2 className="text-xl font-bold">Tipo de ensino</h2> {/* Ce titre est maintenu ici pour la section */}
         <TeacherTypeSelector
           selectedTypes={selectedTeacherTypes}
           setSelectedTypes={(types) => {
@@ -326,8 +327,8 @@ export default function SettingsPage() {
           />
         </div>
 
-        <Button 
-          onClick={handleUpdatePassword} 
+        <Button
+          onClick={handleUpdatePassword}
           disabled={passwordSaving || !newPassword || !confirmPassword} // Désactiver si les champs sont vides
         >
           {passwordSaving ? 'Salvando...' : 'Salvar Nova Senha'}
