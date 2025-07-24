@@ -6,7 +6,7 @@ import { Input } from '../components/ui/Input';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { FileText, Eye, Download, AlertTriangle, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/Auth/AuthContext'; // Assurez-vous que le chemin est correct
+import { useAuth } from '../contexts/AuthContext'; // Assurez-vous que le chemin est correct
 import toast from 'react-hot-toast';
 
 // Interface pour les titres d'évaluation
@@ -546,7 +546,7 @@ export const EvaluationFormPage: React.FC = () => {
         <p className="mt-1 text-gray-500">
           {isEditing
             ? 'Atualize as informações das avaliações'
-            : 'Preencha as informações para criar múltiplas avaliações'}
+            : 'Preencha as informations pour créer múltiples avaliações'}
         </p>
       </div>
 
