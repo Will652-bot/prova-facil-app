@@ -8,16 +8,16 @@ import { FileText, Eye, Download, AlertTriangle, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
-// import { v4 as uuidv4 } from 'uuid'; // <-- ASSUREZ-VOUS QUE CETTE LIGNE EST COMMENTÉE OU SUPPRIMÉE
+// import { v4 as uuidv4 } from 'uuid'; // Ensure this line is commented or deleted
 
-// Interface pour les titres d'évaluation
+// Interface for evaluation titles
 interface EvaluationTitle {
   id: string;
   title: string;
   teacher_id: string;
 }
 
-// Interface pour les pièces jointes d'évaluation (PDFs)
+// Interface for evaluation attachments (PDFs)
 interface EvaluationAttachment {
   id: string;
   evaluation_title_id: string;
@@ -30,9 +30,9 @@ interface EvaluationAttachment {
   };
 }
 
-// Nouvelle interface pour les données d'évaluation des étudiants, incluant les commentaires
+// New interface for student evaluation data, including comments
 interface StudentEvaluationData {
-  id?: string; // L'ID est optionnel car il n'existe pas pour les nouvelles évaluations
+  id?: string; // ID is optional as it doesn't exist for new evaluations
   student_id: string;
   student_name: string;
   criterion_id: string;
@@ -46,13 +46,13 @@ export const EvaluationFormPage: React.FC = () => {
 
   const { user } = useAuth();
 
-  // États de chargement
+  // Loading states
   const [loading, setLoading] = useState(false);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [loadingPDF, setLoadingPDF] = useState(false);
 
-  // États des données
+  // Data states
   const [classes, setClasses] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [criteria, setCriteria] = useState<any[]>([]);
@@ -60,31 +60,31 @@ export const EvaluationFormPage: React.FC = () => {
   const [evaluationTitles, setEvaluationTitles] = useState<EvaluationTitle[]>([]);
   const [attachedPDF, setAttachedPDF] = useState<EvaluationAttachment | null>(null);
 
-  // États des entrées du formulaire
+  // Form input states
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedCriterion, setSelectedCriterion] = useState<any>(null);
   const [selectedEvaluationTitleId, setSelectedEvaluationTitleId] = useState('');
-  // Initialise la date à aujourd'hui par défaut
+  // Initializes the date to today by default
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // État des évaluations multiples - inclut maintenant 'comments' pour chaque étudiant
+  // Multiple evaluations state - now includes 'comments' for each student
   const [evaluations, setEvaluations] = useState<StudentEvaluationData[]>([]);
 
-  // État pour l'affichage du titre de l'évaluation
+  // State for evaluation title display
   const [showTitleField, setShowTitleField] = useState(false);
   const [evaluationTitleName, setEvaluationTitleName] = useState('');
 
-  // État du dialogue de confirmation de suppression
+  // Delete confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: '',
     message: ''
   });
 
-  // Détermine si le formulaire est en mode édition (si un ID est présent dans l'URL)
+  // Determines if the form is in edit mode (if an ID is present in the URL)
   const isEditing = !!id;
 
-  // --- Fonctions de gestion des changements de valeur et de commentaire (utilisent useCallback) ---
+  // --- Functions for handling value and comment changes (use useCallback) ---
   const handleValueChange = useCallback((studentId: string, value: string) => {
     setEvaluations(prev =>
       prev.map(evaluation =>
@@ -104,10 +104,10 @@ export const EvaluationFormPage: React.FC = () => {
       )
     );
   }, []);
-  // --- FIN Fonctions de gestion ---
+  // --- END Functions for handling changes ---
 
 
-  // --- Fonctions de récupération de données (TOUTES en useCallback pour la stabilité) ---
+  // --- Data fetching functions (ALL in useCallback for stability) ---
   const fetchClasses = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -121,7 +121,7 @@ export const EvaluationFormPage: React.FC = () => {
       console.error('Error fetching classes:', error.message);
       toast.error('Erro ao carregar turmas');
     }
-  }, [user?.id]); // Dépend de user.id et supabase (implicite via 'supabase' importé)
+  }, [user?.id]); // Depends on user.id and supabase (implicit via 'supabase' import)
 
   const fetchCriteria = useCallback(async () => {
     try {
@@ -138,7 +138,7 @@ export const EvaluationFormPage: React.FC = () => {
       console.error('Error fetching criteria:', error.message);
       toast.error('Erro ao carregar critérios');
     }
-  }, [user?.id]); // Dépend de user.id et supabase
+  }, [user?.id]); // Depends on user.id and supabase
 
   const fetchEvaluationTitles = useCallback(async () => {
     try {
@@ -153,7 +153,7 @@ export const EvaluationFormPage: React.FC = () => {
       console.error('Error fetching evaluation titles:', error.message);
       toast.error('Erro ao carregar títulos de avaliação');
     }
-  }, [user?.id]); // Dépend de user.id et supabase
+  }, [user?.id]); // Depends on user.id and supabase
 
   const fetchCriteriaForTitle = useCallback(async (titleId: string) => {
     try {
@@ -173,14 +173,14 @@ export const EvaluationFormPage: React.FC = () => {
       if (titleCriteria.length > 0) {
         setAvailableCriteria(titleCriteria);
       } else {
-        // Si aucun critère spécifique n'est trouvé pour ce titre, revenir à tous les critères
+        // If no specific criteria found for this title, revert to all criteria
         setAvailableCriteria(criteria);
       }
     } catch (error: any) {
       console.error('Error fetching criteria for title:', error.message);
-      setAvailableCriteria(criteria); // Revenir aux critères par défaut en cas d'erreur
+      setAvailableCriteria(criteria); // Revert to default criteria on error
     }
-  }, [user?.id, criteria]); // Dépend de user.id, criteria et supabase
+  }, [user?.id, criteria]); // Depends on user.id, criteria and supabase
 
   const checkForAttachedPDF = useCallback(async () => {
     try {
@@ -193,7 +193,7 @@ export const EvaluationFormPage: React.FC = () => {
         .eq('teacher_id', user?.id)
         .maybeSingle();
 
-      // PGRST116 est le code d'erreur pour "No rows found" avec maybeSingle
+      // PGRST116 is the error code for "No rows found" with maybeSingle
       if (error && error.code !== 'PGRST116') throw error;
 
       setAttachedPDF(data);
@@ -204,9 +204,10 @@ export const EvaluationFormPage: React.FC = () => {
     } finally {
       setLoadingPDF(false);
     }
-  }, [selectedEvaluationTitleId, selectedClass, user?.id]); // Dépend de selectedEvaluationTitleId, selectedClass, user.id et supabase
+  }, [selectedEvaluationTitleId, selectedClass, user?.id]); // Depends on selectedEvaluationTitleId, selectedClass, user.id and supabase
 
-  const fetchStudents = useCallback(async (classId: string) => {
+  // MODIFICATION CLÉ ICI: fetchStudents ne dépend plus de selectedCriterion?.id
+  const fetchStudents = useCallback(async (classId: string, initialCriterionId?: string) => {
     setLoadingStudents(true);
     try {
       const { data, error } = await supabase
@@ -218,12 +219,12 @@ export const EvaluationFormPage: React.FC = () => {
       if (error) throw error;
       setStudents(data || []);
 
-      // Initialise les évaluations pour les nouveaux étudiants si pas en mode édition
-      if (data && !isEditing) {
+      if (data) {
         const initialEvaluations: StudentEvaluationData[] = data.map(student => ({
           student_id: student.id,
           student_name: `${student.first_name} ${student.last_name}`,
-          criterion_id: selectedCriterion?.id || '',
+          // Utilise initialCriterionId si fourni, sinon selectedCriterion?.id
+          criterion_id: initialCriterionId || selectedCriterion?.id || '',
           value: '',
           comments: ''
         }));
@@ -237,12 +238,12 @@ export const EvaluationFormPage: React.FC = () => {
     } finally {
       setLoadingStudents(false);
     }
-  }, [selectedCriterion?.id, isEditing]); // Dépend de selectedCriterion.id, isEditing et supabase. setEvaluations est une dépendance implicite ici.
+  }, [selectedCriterion?.id]); // selectedCriterion?.id est toujours une dépendance car il est utilisé pour les nouvelles évaluations
 
   const fetchEvaluation = useCallback(async (evaluationId: string) => {
     setLoading(true);
     try {
-      // Étape 1: Récupérer un enregistrement unique pour identifier le groupe d'évaluation
+      // Step 1: Fetch a single evaluation record to identify the group
       const { data: singleEvaluationRecord, error: singleFetchError } = await supabase
         .from('evaluations')
         .select(`date, class_id, criterion_id, evaluation_title_id`)
@@ -259,15 +260,19 @@ export const EvaluationFormPage: React.FC = () => {
 
       const { date: groupDate, class_id: groupClassId, criterion_id: groupCriterionId, evaluation_title_id: groupEvaluationTitleId } = singleEvaluationRecord;
 
-      // Mettre à jour les états du formulaire avec les données du groupe
+      // Update form states with group data
       setDate(new Date(groupDate).toISOString().split('T')[0]);
       setSelectedClass(groupClassId);
       setSelectedEvaluationTitleId(groupEvaluationTitleId || '');
 
-      // Charger les étudiants de la classe sélectionnée
-      await fetchStudents(groupClassId);
+      // MODIFICATION CLÉ ICI: Définir selectedCriterion AVANT d'appeler fetchStudents
+      const criterion = criteria.find(c => c.id === groupCriterionId);
+      setSelectedCriterion(criterion || null);
+      
+      // Pass the criterion ID directly to fetchStudents
+      await fetchStudents(groupClassId, groupCriterionId);
 
-      // Étape 2: Récupérer toutes les évaluations existantes pour ce groupe (date, classe, critère, titre)
+      // Step 2: Fetch all existing evaluations for this group (date, class, criterion, title)
       const { data: existingEvaluations, error: evalError } = await supabase
         .from('evaluations')
         .select(`id, student_id, value, comments`)
@@ -278,28 +283,28 @@ export const EvaluationFormPage: React.FC = () => {
 
       if (evalError) throw evalError;
 
-      // Mettre à jour l'état 'evaluations' en fusionnant les étudiants et leurs évaluations existantes
-      setEvaluations(currentStudents => { // Renommé 'currentEvaluations' en 'currentStudents' pour plus de clarté
+      // Update 'evaluations' state by merging students and their existing evaluations
+      setEvaluations(currentStudents => { // Renamed 'currentEvaluations' to 'currentStudents' for clarity
         const evaluationsMap = new Map<string, Omit<StudentEvaluationData, 'student_name'>>();
         existingEvaluations?.forEach(evaluation => {
           evaluationsMap.set(evaluation.student_id, {
             id: evaluation.id,
             student_id: evaluation.student_id,
-            criterion_id: groupCriterionId, // Assurez-vous que le criterion_id est correct
+            criterion_id: groupCriterionId, // Ensure criterion_id is correct
             value: evaluation.value?.toString() || '',
             comments: evaluation.comments || ''
           });
         });
 
-        // Assurez-vous que 'currentStudents' est bien la liste des étudiants chargés par fetchStudents
+        // Ensure 'currentStudents' is indeed the list of students loaded by fetchStudents
         return (currentStudents || []).map(student => {
           const existing = evaluationsMap.get(student.student_id);
           return {
-            ...student, // Garde student_id et student_name de la liste des étudiants
-            criterion_id: existing?.criterion_id || groupCriterionId, // Utilise l'existant ou le groupe
+            ...student, // Keeps student_id and student_name from the student list
+            criterion_id: existing?.criterion_id || groupCriterionId, // Uses existing or group
             value: existing?.value || '',
             comments: existing?.comments || '',
-            id: existing?.id // L'ID de l'évaluation existante
+            id: existing?.id // The ID of the existing evaluation
           };
         });
       });
@@ -311,33 +316,35 @@ export const EvaluationFormPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, navigate, fetchStudents]); // Dépend de user.id, navigate, fetchStudents et supabase
+  }, [user?.id, navigate, fetchStudents, criteria]); // Added 'criteria' to dependencies
 
 
-  // --- useEffects pour le chargement des données et la logique du formulaire ---
+  // --- useEffects for data loading and form logic ---
 
-  // Effet pour l'initialisation générale et le chargement d'évaluation en mode édition
+  // Effect for general initialization and evaluation loading in edit mode
   useEffect(() => {
     const initialize = async () => {
       setLoading(true);
       try {
+        // Fetch all static data first
         await Promise.all([
           fetchClasses(),
           fetchCriteria(),
           fetchEvaluationTitles()
         ]);
 
+        // If in edit mode, then fetch the specific evaluation data
         if (isEditing) {
           if (id) {
             await fetchEvaluation(id);
           } else {
-            console.error("Erreur: isEditing est vrai mais l'ID de l'évaluation est manquant dans les paramètres de l'URL.");
+            console.error("Error: isEditing is true but evaluation ID is missing in URL parameters.");
             toast.error("Erro ao carregar avaliação: ID ausente.");
             navigate('/evaluations');
           }
         }
       } catch (err: any) {
-        console.error("Erreur d'initialisation du formulário:", err.message);
+        console.error("Error initializing form:", err.message);
         toast.error('Erro ao iniciar formulário.');
         navigate('/evaluations');
       } finally {
@@ -349,32 +356,45 @@ export const EvaluationFormPage: React.FC = () => {
   }, [id, user?.id, isEditing, navigate, fetchClasses, fetchCriteria, fetchEvaluationTitles, fetchEvaluation]);
 
 
-  // Effet pour charger les étudiants quand la classe sélectionnée change
+  // Effect to load students when the selected class changes
   useEffect(() => {
     if (selectedClass) {
-      fetchStudents(selectedClass);
+      // In new evaluation mode, fetchStudents will initialize evaluations for all students.
+      // In edit mode, fetchEvaluation already calls fetchStudents and sets evaluations.
+      // So, this effect should only trigger fetchStudents if not in edit mode,
+      // or if selectedClass changes AFTER initial fetchEvaluation.
+      // However, fetchEvaluation already handles student fetching.
+      // We need to ensure this doesn't re-trigger unnecessarily or incorrectly.
+      // The previous logic for fetchStudents was tied to selectedCriterion and isEditing.
+      // Let's simplify this: fetchStudents is now explicitly called from fetchEvaluation
+      // for edit mode. For new mode, it's called when selectedClass changes.
+      if (!isEditing || (isEditing && evaluations.length === 0 && students.length === 0)) {
+         fetchStudents(selectedClass);
+      }
     } else {
       setStudents([]);
-      if (!isEditing) { // Seulement vider les évaluations si ce n'est pas en mode édition
+      if (!isEditing) { // Only clear evaluations if not in edit mode
         setEvaluations([]);
       }
     }
-  }, [selectedClass, isEditing, fetchStudents]);
+  }, [selectedClass, isEditing, fetchStudents, evaluations.length, students.length]);
 
 
-  // Effet pour définir le critère sélectionné (principalement en mode édition)
-  // et s'assurer que availableCriteria est prêt.
+  // Effect to set the selected criterion (primarily in edit mode)
+  // and ensure availableCriteria is ready.
+  // This effect might become redundant if selectedCriterion is set directly in fetchEvaluation.
+  // We keep it for robustness, especially if selectedCriterion is needed for other reasons.
   useEffect(() => {
     if (evaluations.length > 0 && evaluations[0]?.criterion_id && availableCriteria.length > 0) {
       const criterion = availableCriteria.find(c => c.id === evaluations[0].criterion_id);
       setSelectedCriterion(criterion || null);
-    } else if (evaluations.length === 0) {
+    } else if (evaluations.length === 0 && !isEditing) { // Only clear if not editing and no evaluations
       setSelectedCriterion(null);
     }
-  }, [evaluations, availableCriteria]);
+  }, [evaluations, availableCriteria, isEditing]);
 
 
-  // Effet pour filtrer les critères basés sur le titre d'évaluation sélectionné
+  // Effect to filter criteria based on the selected evaluation title
   useEffect(() => {
     if (selectedEvaluationTitleId) {
       fetchCriteriaForTitle(selectedEvaluationTitleId);
@@ -384,7 +404,7 @@ export const EvaluationFormPage: React.FC = () => {
   }, [selectedEvaluationTitleId, criteria, fetchCriteriaForTitle]);
 
 
-  // Effet pour vérifier et afficher le PDF attaché
+  // Effect to check and display the attached PDF
   useEffect(() => {
     if (selectedEvaluationTitleId && selectedClass) {
       checkForAttachedPDF();
@@ -394,7 +414,7 @@ export const EvaluationFormPage: React.FC = () => {
   }, [selectedEvaluationTitleId, selectedClass, user?.id, checkForAttachedPDF]);
 
 
-  // Effet pour auto-remplir le nom du titre d'évaluation affiché
+  // Effect to auto-fill the displayed evaluation title name
   useEffect(() => {
     if (selectedEvaluationTitleId && !isEditing) {
       const selectedEvaluationTitle = evaluationTitles.find(
@@ -412,7 +432,7 @@ export const EvaluationFormPage: React.FC = () => {
   }, [selectedEvaluationTitleId, evaluationTitles, isEditing]);
 
 
-  // Effet pour contrôler la visibilité du champ de titre en mode édition
+  // Effect to control the visibility of the title field in edit mode
   useEffect(() => {
     if (isEditing && selectedEvaluationTitleId) {
       const selectedEvaluationTitle = evaluationTitles.find(
@@ -429,10 +449,10 @@ export const EvaluationFormPage: React.FC = () => {
   }, [isEditing, selectedEvaluationTitleId, evaluationTitles]);
 
 
-  // NOUVEL Effet : Récupérer et pré-remplir les évaluations existantes pour le mode "Nouvelle Évaluation"
-  // Prend en compte la date sélectionnée (par défaut la date du jour)
+  // NEW Effect: Fetch and pre-fill existing evaluations for "New Evaluation" mode
+  // Takes into account the selected date (defaults to today's date)
   useEffect(() => {
-    // Ne s'exécute pas en mode édition, ou si des dépendances clés sont manquantes
+    // Does not run in edit mode, or if key dependencies are missing
     if (isEditing || !user || !selectedClass || !selectedCriterion?.id || !selectedEvaluationTitleId || students.length === 0) {
       return;
     }
@@ -447,7 +467,7 @@ export const EvaluationFormPage: React.FC = () => {
           .eq('criterion_id', selectedCriterion.id)
           .eq('evaluation_title_id', selectedEvaluationTitleId)
           .eq('teacher_id', user.id)
-          .eq('date', date) // <-- Correction 2 : Filtrer par la date du formulaire
+          .eq('date', date) // Filter by the form's date
           .order('date', { ascending: false })
           .order('created_at', { ascending: false });
 
@@ -455,7 +475,7 @@ export const EvaluationFormPage: React.FC = () => {
 
         const existingEvalsMap = new Map<string, Pick<StudentEvaluationData, 'id' | 'value' | 'comments'>>();
         existingEvals?.forEach(evalItem => {
-          // Si plusieurs évaluations existent pour le même étudiant, on prend la plus récente grâce aux ordres
+          // If multiple evaluations exist for the same student, take the most recent due to ordering
           if (!existingEvalsMap.has(evalItem.student_id)) {
             existingEvalsMap.set(evalItem.student_id, {
               id: evalItem.id,
@@ -466,7 +486,7 @@ export const EvaluationFormPage: React.FC = () => {
         });
 
         setEvaluations(currentEvaluations => {
-          // Si currentEvaluations est vide (première fois que les étudiants sont chargés)
+          // If currentEvaluations is empty (first time students are loaded)
           if (!currentEvaluations || currentEvaluations.length === 0) {
             return students.map(student => {
               const existing = existingEvalsMap.get(student.id);
@@ -476,12 +496,12 @@ export const EvaluationFormPage: React.FC = () => {
                 criterion_id: selectedCriterion.id,
                 value: existing?.value || '',
                 comments: existing?.comments || '',
-                id: existing?.id // L'ID existant sera inclus si l'évaluation est pré-remplie
+                id: existing?.id // Existing ID will be included if evaluation is pre-filled
               };
             });
           }
 
-          // Si currentEvaluations contient déjà des données (par exemple, après un changement de critère)
+          // If currentEvaluations already contains data (e.g., after a criterion change)
           return currentEvaluations.map(evaluation => {
             const existing = existingEvalsMap.get(evaluation.student_id);
             if (existing) {
@@ -489,10 +509,10 @@ export const EvaluationFormPage: React.FC = () => {
                 ...evaluation,
                 value: existing.value,
                 comments: existing.comments,
-                id: existing.id // L'ID existant sera inclus
+                id: existing.id // Existing ID will be included
               };
             }
-            return evaluation; // Retourne l'évaluation telle quelle si pas de pré-remplissage
+            return evaluation; // Return evaluation as is if no pre-fill
           });
         });
 
@@ -505,19 +525,19 @@ export const EvaluationFormPage: React.FC = () => {
     };
 
     fetchExistingEvalsForPreFill();
-  }, [user, isEditing, selectedClass, selectedCriterion, selectedEvaluationTitleId, students, date]); // <-- Correction 2 : Ajout de 'date' aux dépendances
+  }, [user, isEditing, selectedClass, selectedCriterion, selectedEvaluationTitleId, students, date]); // Added 'date' to dependencies
 
-  // --- FIN useEffects ---
+  // --- END useEffects ---
 
 
-  // Gère la visualisation du PDF attaché dans un nouvel onglet
+  // Handles viewing the attached PDF in a new tab
   const handleViewPDF = async () => {
     if (!attachedPDF) return;
 
     try {
       const { data, error } = await supabase.storage
         .from('evaluation-attachments')
-        .createSignedUrl(attachedPDF.file_path, 3600); // URL signée valide pour 1 heure
+        .createSignedUrl(attachedPDF.file_path, 3600); // Signed URL valid for 1 hour
 
       if (error) throw error;
 
@@ -530,7 +550,7 @@ export const EvaluationFormPage: React.FC = () => {
     }
   };
 
-  // Gère le téléchargement du PDF attaché
+  // Handles downloading the attached PDF
   const handleDownloadPDF = async () => {
     if (!attachedPDF) return;
 
@@ -562,7 +582,7 @@ export const EvaluationFormPage: React.FC = () => {
     }
   };
 
-  // Gère le changement de critère sélectionné
+  // Handles change in selected criterion
   const handleCriterionChange = (criterionId: string) => {
     const criterion = availableCriteria.find(c => c.id === criterionId);
     setSelectedCriterion(criterion);
@@ -571,14 +591,14 @@ export const EvaluationFormPage: React.FC = () => {
       prev.map(evaluation => ({
         ...evaluation,
         criterion_id: criterionId,
-        // Réinitialise la valeur et les commentaires si le critère change
+        // Resets value and comments if criterion changes
         value: evaluation.criterion_id !== criterionId ? '' : evaluation.value,
         comments: evaluation.criterion_id !== criterionId ? '' : evaluation.comments
       }))
     );
   };
 
-  // Valide les entrées du formulaire avant la soumission
+  // Validates the form inputs before submission
   const validateForm = () => {
     if (!selectedClass) {
       toast.error('Selecione uma turma');
@@ -596,25 +616,25 @@ export const EvaluationFormPage: React.FC = () => {
     }
 
     if (!selectedCriterion || !selectedCriterion.id) {
-      toast.error('Selecione um critère valide.');
+      toast.error('Selecione un critère valide.');
       return false;
     }
 
-    // Vérifie que tous les items d'évaluation ont le bon criterion_id
+    // Checks that all evaluation items have the correct criterion_id
     const hasCorrectCriterionId = evaluations.every(evalItem => evalItem.criterion_id === selectedCriterion.id);
     if (!hasCorrectCriterionId) {
       toast.error('O ID do critère não corresponde para todas as avaliações. Por favor, selecione o critère novamente.');
       return false;
     }
 
-    // Vérifie qu'au moins une évaluation a une valeur non vide
+    // Checks that at least one evaluation has a non-empty value
     const hasValues = evaluations.some(evaluation => evaluation.value && evaluation.value.trim() !== '');
     if (!hasValues) {
       toast.error('Informe pelo menos um valor de avaliação');
       return false;
     }
 
-    // Valide les valeurs par rapport à la plage du critère
+    // Validates values against the criterion range
     if (selectedCriterion) {
       const invalidValues = evaluations
         .filter(evaluation => evaluation.value && evaluation.value.trim() !== '')
@@ -634,7 +654,7 @@ export const EvaluationFormPage: React.FC = () => {
     return true;
   };
 
-  // Gère la soumission du formulaire (création ou mise à jour des évaluations)
+  // Handles form submission (create or update evaluations)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -643,13 +663,13 @@ export const EvaluationFormPage: React.FC = () => {
     setLoading(true);
 
     try {
-      // Prépare les évaluations à sauvegarder, en filtrant celles sans valeur
+      // Prepares evaluations to save, filtering out those without a value
       const evaluationsToSave = evaluations
         .filter(evaluation => evaluation.value && evaluation.value.trim() !== '')
         .map(evaluation => {
           const finalCriterionId = selectedCriterion?.id;
           if (!finalCriterionId) {
-            // Cette erreur devrait être attrapée par la validation, mais c'est une sécurité
+            // This error should be caught by validation, but it's a safeguard
             throw new Error("Criterion ID is missing during submission. This should be caught by validation.");
           }
 
@@ -664,8 +684,8 @@ export const EvaluationFormPage: React.FC = () => {
             evaluation_title_id: selectedEvaluationTitleId
           };
 
-          // Inclure 'id' UNIQUEMENT si evaluation.id existe déjà (pour les mises à jour).
-          // Sinon, l'ID sera généré par la base de données (DEFAULT gen_random_uuid()).
+          // Include 'id' ONLY if evaluation.id already exists (for updates).
+          // Otherwise, the ID will be generated by the database (DEFAULT gen_random_uuid()).
           if (evaluation.id) {
             baseEvaluation.id = evaluation.id;
           }
@@ -673,25 +693,25 @@ export const EvaluationFormPage: React.FC = () => {
           return baseEvaluation;
         });
 
-      // Séparez les insertions des mises à jour
+      // Separate inserts from updates
       const toUpdate = evaluationsToSave.filter(evaluation => 'id' in evaluation);
       const toInsert = evaluationsToSave.filter(evaluation => !('id' in evaluation));
 
-      // Effectuez les mises à jour
+      // Perform updates
       if (toUpdate.length > 0) {
         const { error: updateError } = await supabase
           .from('evaluations')
           .upsert(toUpdate, {
-            onConflict: 'id' // <-- Correction 1 : Utilise l'ID primaire pour le conflit
+            onConflict: 'id' // <-- Correction 1 : Uses primary ID for conflict
           });
         if (updateError) throw updateError;
       }
 
-      // Effectuez les insertions
+      // Perform inserts
       if (toInsert.length > 0) {
         const { error: insertError } = await supabase
           .from('evaluations')
-          .insert(toInsert); // Utilise insert pour les nouveaux enregistrements (l'ID sera généré)
+          .insert(toInsert); // Uses insert for new records (ID will be generated)
         if (insertError) throw insertError;
       }
 
@@ -705,7 +725,7 @@ export const EvaluationFormPage: React.FC = () => {
     }
   };
 
-  // Gère le dialogue de confirmation de suppression
+  // Handles deletion confirmation dialog
   const handleDeleteClick = () => {
     setConfirmDialog({
       isOpen: true,
@@ -714,13 +734,13 @@ export const EvaluationFormPage: React.FC = () => {
     });
   };
 
-  // Gère la suppression réelle des évaluations
+  // Handles the actual deletion of evaluations
   const handleConfirmDelete = async () => {
-    if (!isEditing || !id) return; // Ne peut supprimer qu'en mode édition avec un ID
+    if (!isEditing || !id) return; // Can only delete in edit mode with an ID
 
     setDeleting(true);
     try {
-      // Récupère les données de l'évaluation pour obtenir les infos du groupe à supprimer
+      // Fetches evaluation data to get group info to delete
       const { data: evaluationData, error: fetchError } = await supabase
         .from('evaluations')
         .select('*')
@@ -729,7 +749,7 @@ export const EvaluationFormPage: React.FC = () => {
 
       if (fetchError) throw fetchError;
 
-      // Vérifie les permissions de l'utilisateur
+      // Checks user permissions
       if (evaluationData.teacher_id !== user?.id) {
         toast.error('Você não tem permissão para excluir esta avaliação');
         setDeleting(false);
@@ -737,7 +757,7 @@ export const EvaluationFormPage: React.FC = () => {
         return;
       }
 
-      // Construit la requête de suppression pour toutes les évaluations du groupe
+      // Builds the delete query for all evaluations in the group
       let deleteQuery = supabase
         .from('evaluations')
         .delete()
@@ -752,10 +772,10 @@ export const EvaluationFormPage: React.FC = () => {
 
       const { error: deleteError } = await deleteQuery;
 
-      if (deleteError) throw deleteError; // Lance l'erreur si la suppression échoue
+      if (deleteError) throw deleteError; // Throws error if deletion fails
 
       toast.success('Avaliação excluída com sucesso');
-      navigate('/evaluations'); // Redirige après la suppression
+      navigate('/evaluations'); // Redirects after deletion
     } catch (error: any) {
       console.error('Error deleting evaluation:', error.message);
       toast.error('Erro ao excluir avaliação');
@@ -765,19 +785,19 @@ export const EvaluationFormPage: React.FC = () => {
     }
   };
 
-  // Trie les évaluations : celles avec des valeurs d'abord, puis par ordre alphabétique du nom de l'étudiant
+  // Sorts evaluations: those with values first, then alphabetically by student name
   const sortedEvaluations = [...evaluations].sort((a, b) => {
     const aHasValue = a.value && a.value.trim() !== '';
     const bHasValue = b.value && b.value.trim() !== '';
 
-    if (aHasValue && !bHasValue) return -1; // a a une valeur, b n'en a pas -> a avant b
-    if (!aHasValue && bHasValue) return 1;  // a n'a pas de valeur, b en a une -> b avant a
+    if (aHasValue && !bHasValue) return -1; // a has a value, b doesn't -> a before b
+    if (!aHasValue && bHasValue) return 1;  // a has no value, b has one -> b before a
 
-    // Si les deux ont ou n'ont pas de valeur, trier par nom d'étudiant
+    // If both have or don't have a value, sort by student name
     return a.student_name.localeCompare(b.student_name);
   });
 
-  // Overlay de chargement global pour empêcher l'interaction et afficher le statut
+  // Global loading overlay to prevent interaction and show status
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -803,7 +823,7 @@ export const EvaluationFormPage: React.FC = () => {
       <Card>
         <form onSubmit={handleSubmit} className="space-y-6 p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Champ de saisie de la date */}
+            {/* Date Input */}
             <Input
               label="Data"
               type="date"
@@ -813,7 +833,7 @@ export const EvaluationFormPage: React.FC = () => {
               fullWidth
             />
 
-            {/* Sélection de la classe */}
+            {/* Class Selection */}
             <div className="space-y-2">
               <label htmlFor="class-select" className="block text-sm font-medium text-gray-700">
                 Turma
@@ -826,7 +846,7 @@ export const EvaluationFormPage: React.FC = () => {
                   setSelectedClass(e.target.value);
                 }}
                 required
-                // Désactivé en mode édition pour maintenir la cohérence du groupe
+                // Disabled in edit mode to maintain group consistency
                 disabled={isEditing}
               >
                 <option value="">Selecione uma turma</option>
@@ -838,7 +858,7 @@ export const EvaluationFormPage: React.FC = () => {
               </select>
             </div>
 
-            {/* Sélection du titre de l'évaluation */}
+            {/* Evaluation Title Selection */}
             <div className="space-y-2">
               <label htmlFor="evaluation-title-select" className="block text-sm font-medium text-gray-700">
                 Título da Avaliação
@@ -866,7 +886,7 @@ export const EvaluationFormPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Affichage du nom du titre d'évaluation sélectionné */}
+            {/* Display Selected Evaluation Title Name */}
             {evaluationTitleName && (
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
@@ -881,7 +901,7 @@ export const EvaluationFormPage: React.FC = () => {
               </div>
             )}
 
-            {/* Sélection du critère */}
+            {/* Criterion Selection */}
             <div className="space-y-2">
               <label htmlFor="criterion-select" className="block text-sm font-medium text-gray-700">
                 Critério
@@ -892,7 +912,7 @@ export const EvaluationFormPage: React.FC = () => {
                 value={selectedCriterion?.id || ''}
                 onChange={(e) => handleCriterionChange(e.target.value)}
                 required
-                // Désactivé si en édition et des évaluations sont déjà chargées
+                // Disabled if in edit mode and evaluations are already loaded
                 disabled={isEditing && evaluations.length > 0}
               >
                 <option value="">Selecione um critère</option>
@@ -918,7 +938,7 @@ export const EvaluationFormPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Indicateur de pièce jointe PDF */}
+          {/* PDF Attachment Indicator */}
           {loadingPDF ? (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-center">
               <div className="animate-spin h-5 w-5 border-2 border-primary-500 rounded-full border-t-transparent mr-2"></div>
@@ -971,7 +991,7 @@ export const EvaluationFormPage: React.FC = () => {
             </div>
           ) : null}
 
-          {/* Tableau des évaluations des étudiants - inclut maintenant la colonne des commentaires */}
+          {/* Student Evaluations Table - Now includes comments column */}
           {selectedClass && (
             <div className="mt-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Avaliações dos Alunos</h3>
@@ -1004,7 +1024,7 @@ export const EvaluationFormPage: React.FC = () => {
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Valor
                         </th>
-                        {/* NOUVEAU : En-tête des commentaires */}
+                        {/* NEW: Comments Header */}
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Comentários
                         </th>
@@ -1031,7 +1051,7 @@ export const EvaluationFormPage: React.FC = () => {
                                 disabled={false}
                               />
                             </td>
-                            {/* NOUVEAU : Champ de saisie des commentaires pour chaque étudiant */}
+                            {/* NEW: Comments Input for each student */}
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-full">
                               <textarea
                                 className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-500 focus:ring-opacity-50"
@@ -1052,7 +1072,7 @@ export const EvaluationFormPage: React.FC = () => {
           )}
 
           <div className="flex justify-between items-center">
-            {/* Bouton de suppression - affiché uniquement en mode édition */}
+            {/* Delete button - only show when editing */}
             {isEditing && (
               <Button
                 type="button"
@@ -1081,7 +1101,7 @@ export const EvaluationFormPage: React.FC = () => {
         </form>
       </Card>
 
-      {/* Dialogue de confirmation */}
+      {/* Confirm Dialog */}
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
         title={confirmDialog.title}
