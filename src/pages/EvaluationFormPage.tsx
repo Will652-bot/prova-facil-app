@@ -221,7 +221,7 @@ export const EvaluationFormPage: React.FC = () => {
 
         setClasses(classesData);
         setCriteria(criteriaData);
-        setAvailableCriteria(criteriaData);
+        setAvailableCriteria(criteriaData); // Initialise availableCriteria avec tous les critères
         setEvaluationTitles(evaluationTitlesData);
 
         let initialClassId = '';
@@ -475,7 +475,7 @@ export const EvaluationFormPage: React.FC = () => {
       if (fetchError) throw fetchError;
 
       if (evaluationData.teacher_id !== user?.id) {
-        toast.error('Você não tem permissão para excluir esta avaliação');
+        toast.error('Você não tem permissão pour excluir esta avaliação');
         return; // Sortir sans changer le loading à false ici
       }
 
@@ -798,7 +798,7 @@ export const EvaluationFormPage: React.FC = () => {
               <Button
                 type="button"
                 variant="danger"
-                onClick={handleDeleteClick}
+                onClick={handleDeleteClick} // Appel de la fonction réintégrée
                 isLoading={loading} // Utilisez le loading global
                 leftIcon={<Trash2 className="h-4 w-4" />}
               >
@@ -827,7 +827,7 @@ export const EvaluationFormPage: React.FC = () => {
         isOpen={confirmDialog.isOpen}
         title={confirmDialog.title}
         message={confirmDialog.message}
-        onConfirm={handleConfirmDelete}
+        onConfirm={handleConfirmDelete} // Appel de la fonction réintégrée
         onCancel={() => setConfirmDialog({ isOpen: false, title: '', message: '' })}
       />
     </div>
