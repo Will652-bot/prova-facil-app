@@ -310,18 +310,27 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
             <label className="block text-xs font-medium text-gray-600 mb-1">
               Anexar PDF {!isProFeatureEnabled && <span className="text-orange-600">(Pro)</span>} {/* Utilisation de isProFeatureEnabled */}
             </label>
-            {isProFeatureEnabled ? ( {/* Utilisation de isProFeatureEnabled */}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleFileUploadClick}
-                disabled={uploadingFile === title.id || !selectedClassId}
-                leftIcon={<Upload className="h-4 w-4" />}
-                className="w-full"
-              >
-                {uploadingFile === title.id ? 'Enviando...' : 'Selecionar PDF'}
-              </Button>
+            {isProFeatureEnabled ? ( /* Utilisation de isProFeatureEnabled */
+              <label className={`
+                flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium 
+                border border-gray-300 rounded-md shadow-sm cursor-pointer transition-colors
+                ${uploadingFile === title.id || !selectedClassId
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                  : 'bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
+                }
+              `}>
+                <Upload className="mr-2 h-4 w-4" />
+                <span>
+                  {uploadingFile === title.id ? 'Enviando...' : 'Selecionar PDF'}
+                </span>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUploadClick}
+                  disabled={uploadingFile === title.id || !selectedClassId}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                />
+              </label>
             ) : (
               <div className="relative">
                 <Button
@@ -341,10 +350,10 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
                 </div>
               </div>
             )}
-            {!selectedClassId && isProFeatureEnabled && ( {/* Utilisation de isProFeatureEnabled */}
+            {!selectedClassId && isProFeatureEnabled && ( /* Utilisation de isProFeatureEnabled */
               <p className="text-xs text-orange-600 mt-1">Selecione uma turma primeiro</p>
             )}
-            {!isProFeatureEnabled && ( {/* Utilisation de isProFeatureEnabled */}
+            {!isProFeatureEnabled && ( /* Utilisation de isProFeatureEnabled */
               <p className="text-xs text-blue-600 mt-1">
                 Upgrade para o Plano Pro para anexar PDFs
               </p>
@@ -1067,7 +1076,7 @@ export const EvaluationTitlesPage: React.FC = () => {
         message={
           confirmDialog.isAttachment
             ? "Tem certeza que deseja excluir este anexo? Esta ação não pode ser desfeita."
-            : `Tem certeza que deseja excluir o título "${confirmDialog.titleName}"? Todos os anexos associados também serão excluídos.`
+            : `Tem certeza que deseja excluir o título "${confirmDialog.titleName}"? Todos os anexos associés également seront exclus.`
         }
         onConfirm={confirmDialog.isAttachment ? handleDeleteAttachment : handleDeleteTitle}
         onCancel={() => setConfirmDialog({ isOpen: false, titleId: '', titleName: '', attachmentId: '', isAttachment: false })}
