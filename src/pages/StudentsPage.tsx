@@ -17,7 +17,7 @@ interface Student {
   class_id: string;
   teacher_id: string;
   created_at: string;
-  // Nouveaux champs facultatifs
+  // Nouveaux champs facultatifs, noms alignés avec la DB
   birth_date?: string; // Date de naissance (format 'YYYY-MM-DD' de PostgreSQL DATE)
   guardian_email?: string; // Email du représentant légal
   guardian_phone?: string; // Téléphone du représentant légal
@@ -58,7 +58,7 @@ export const StudentsPage: React.FC = () => {
         setClassName(classData.name);
       }
 
-      // Récupération des étudiants avec filtrage par teacher_id et class_id
+      // Récupération des étudiants avec teacher_id filter
       // Le select('*') récupérera automatiquement les nouveaux champs une fois ajoutés à la DB Supabase
       const { data: studentsData, error: studentsError } = await supabase
         .from('students')
@@ -144,6 +144,7 @@ export const StudentsPage: React.FC = () => {
           <Button
             variant="outline"
             onClick={() => navigate('/classes')}
+            // leftIcon={<ArrowLeft className="h-4 w-4" />} // Exemple d'icône de retour
           >
             Voltar
           </Button>
@@ -209,7 +210,7 @@ export const StudentsPage: React.FC = () => {
                   <h3 className="text-lg font-medium text-gray-900">
                     {student.first_name} {student.last_name}
                   </h3>
-                  {/* Si vous souhaitez afficher les nouvelles informations ici, vous pouvez les ajouter.
+                  {/* Vous pouvez choisir d'afficher les nouvelles informations ici si pertinent pour cette vue.
                       Par exemple:
                       {student.birth_date && <p className="text-sm text-gray-600">Nascimento: {student.birth_date}</p>}
                       {student.guardian_email && <p className="text-sm text-gray-600">Email Responsável: {student.guardian_email}</p>}
