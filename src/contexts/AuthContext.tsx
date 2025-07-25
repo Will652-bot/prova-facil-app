@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 id: session.user.id, 
                 email: session.user.email, 
                 role: 'teacher', 
-                current_plan: 'pro_trial' // <-- MODIFIÉ : Définir le plan sur 'pro_trial' pour le nouvel utilisateur
+                current_plan: 'pro_trial' // <-- CORRIGÉ : Le plan par défaut pour un nouvel utilisateur est 'pro_trial'
                 // pro_trial_start_date et pro_trial_enabled devraient être gérés par les valeurs par défaut de la DB (now() et true)
               });
             if (insertError) throw insertError;
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let isProOrTrial = false;
         const trialDurationDays = 15; // Durée de l'essai gratuit en jours
 
-        // MODIFICATION CLÉ ICI : La logique pour déterminer si l'utilisateur est sur un plan Pro ou en essai Pro
+        // La logique pour déterminer si l'utilisateur est sur un plan Pro ou en essai Pro
         // L'utilisateur est Pro si :
         // 1. Son abonnement Pro est actif (pro_subscription_active est TRUE)
         // OU
@@ -111,11 +111,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('🔔 [AuthContext] AuthStateChange:', { event, hasSession: !!session });
 
-        // ✅ CORRECTION : Ne pas rediriger si l'événement est PASSWORD_RECOVERY
+        // Ne pas rediriger si l'événement est PASSWORD_RECOVERY
         if (event === 'PASSWORD_RECOVERY') {
           console.log('🔄 [AuthContext] Événement de récupération de mot de passe détecté. Aucune redirection.');
-          // On met à jour l'état pour que l'utilisateur soit temporairement "connecté"
-          // et puisse accéder à la page de réinitialisation.
           await updateUserState(session);
           return;
         }
