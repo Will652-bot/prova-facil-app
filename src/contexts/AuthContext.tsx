@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { User, AuthState } from '../types';
+import { User, AuthState } from '../types'; // Assurez-vous que User et AuthState sont importés de votre fichier types
 
 interface AuthContextType {
   user: User | null;
@@ -26,37 +26,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const { data, error } = await supabase
           .from('users')
-          .select('*')
+          .select('*') // Sélectionne toutes les colonnes de la table 'users'
           .eq('id', session.user.id)
           .single();
 
         if (error) {
           console.warn('⚠️ [AuthContext] Erreur récupération données utilisateur:', error.message);
           
-          if (error.code === 'PGRST116') {
-            console.log('🆕 [AuthContext] Utilisateur non trouvé, création...');
+          if (error.code === 'PGRST116') { // Code d'erreur pour "ligne non trouvée"
+            console.log('🆕 [AuthContext] Utilisateur non trouvé dans la table users, création et activation de l\'essai Pro...');
+            // MODIFICATION CLÉ ICI : Définir current_plan à 'pro_trial' pour les nouveaux utilisateurs
             const { error: insertError } = await supabase
               .from('users')
-              .insert({ id: session.user.id, email: session.user.email, role: 'teacher', current_plan: 'free' });
+              .insert({ 
+                id: session.user.id, 
+                email: session.user.email, 
+                role: 'teacher', 
+                current_plan: 'pro_trial' // <-- MODIFIÉ : Définir le plan sur 'pro_trial' pour le nouvel utilisateur
+                // pro_trial_start_date et pro_trial_enabled devraient être gérés par les valeurs par défaut de la DB (now() et true)
+              });
             if (insertError) throw insertError;
           } else {
-             throw error;
+              throw error;
           }
         }
 
+        // Re-récupère les données si l'insertion vient d'avoir lieu (pour inclure le plan 'pro_trial' si c'est une nouvelle insertion)
         const userData = data || (await supabase.from('users').select('*').eq('id', session.user.id).single()).data;
         
-        const newUser = {
+        // Calcul de la propriété isProOrTrial
+        let isProOrTrial = false;
+        const trialDurationDays = 15; // Durée de l'essai gratuit en jours
+
+        // MODIFICATION CLÉ ICI : La logique pour déterminer si l'utilisateur est sur un plan Pro ou en essai Pro
+        // L'utilisateur est Pro si :
+        // 1. Son abonnement Pro est actif (pro_subscription_active est TRUE)
+        // OU
+        // 2. Son plan est explicitement 'pro' (abonné payant)
+        // OU
+        // 3. Son plan est 'pro_trial' ET l'essai est activé (pro_trial_enabled) ET la date de début est dans la période valide
+        if (userData.pro_subscription_active || userData.current_plan === 'pro') {
+          isProOrTrial = true;
+        } else if (userData.current_plan === 'pro_trial' && userData.pro_trial_enabled && userData.pro_trial_start_date) {
+          const trialStartDate = new Date(userData.pro_trial_start_date);
+          const now = new Date();
+          const diffTime = Math.abs(now.getTime() - trialStartDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // Différence en jours
+
+          if (diffDays <= trialDurationDays) {
+            isProOrTrial = true; // L'essai est toujours valide
+          }
+        }
+
+        const newUser: User = { // Assurez-vous que 'User' est l'interface que vous avez mise à jour
           ...session.user,
           role: userData.role,
-          subscription_plan: userData.current_plan,
+          subscription_plan: userData.current_plan, // Conserver pour la cohérence
           full_name: userData.full_name,
           pro_subscription_active: userData.pro_subscription_active,
           subscription_expires_at: userData.subscription_expires_at,
-          current_plan: userData.current_plan
-        } as User;
+          current_plan: userData.current_plan, // Conserver pour la cohérence
+          pro_trial_start_date: userData.pro_trial_start_date, // Ajouter la date de début de l'essai
+          pro_trial_enabled: userData.pro_trial_enabled,       // Ajouter le flag d'essai
+          isProOrTrial: isProOrTrial,                           // Ajouter la propriété calculée
+        };
         
-        console.log('✅ [AuthContext] Utilisateur mis à jour:', newUser.email);
+        console.log('✅ [AuthContext] Utilisateur mis à jour:', newUser.email, 'Plan Pro/Trial:', newUser.isProOrTrial, 'Current Plan DB:', newUser.current_plan);
         setState({ session, user: newUser, loading: false });
       } catch (error) {
         console.error('❌ [AuthContext] Exception mise à jour utilisateur:', error);
