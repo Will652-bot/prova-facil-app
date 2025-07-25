@@ -7,61 +7,91 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
+// Interface pour les classes, nécessaire pour le sélecteur
+interface Class {
+  id: string;
+  name: string;
+}
+
 export const StudentFormPage: React.FC = () => {
   const navigate = useNavigate();
-  const { classId, id } = useParams(); // 'id' sera présent en mode édition
+  const { classId, id } = useParams(); // 'id' sera présent en mode édition, classId peut être undefined si on vient du dashboard
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [classes, setClasses] = useState<Class[]>([]); // Nouvel état pour stocker les classes
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
-    // Nouveaux champs facultatifs, noms alignés avec la DB
-    birth_date: '', // Initialisé comme chaîne vide pour l'input type="date"
+    birth_date: '',
     guardian_email: '',
-    guardian_phone: ''
+    guardian_phone: '',
+    selectedClassId: classId || '' // Initialiser avec classId de l'URL si présent, sinon vide
   });
 
   const isEditing = !!id; // Détermine si nous sommes en mode édition
 
   // Effet pour charger les données de l'étudiant si nous sommes en mode édition
+  // Ou pour charger les classes si nous sommes en mode création
   useEffect(() => {
     if (isEditing) {
       fetchStudent();
+    } else {
+      fetchClasses(); // Charger les classes uniquement en mode création
     }
-  }, [id, user?.id]); // Dépendances: id de l'étudiant et ID de l'utilisateur
+  }, [id, user?.id, isEditing]); // Dépendances: id de l'étudiant, ID de l'utilisateur, et mode édition
 
   // Fonction pour récupérer les données de l'étudiant existant
   const fetchStudent = async () => {
     try {
       const { data, error } = await supabase
         .from('students')
-        .select('*') // Sélectionne toutes les colonnes, y compris les nouvelles
+        .select('*')
         .eq('id', id)
-        .eq('teacher_id', user?.id) // S'assure que le professeur ne peut éditer que ses propres étudiants
-        .single(); // Récupère un seul enregistrement
+        .eq('teacher_id', user?.id)
+        .single();
 
       if (error) throw error;
       if (data) {
-        // Met à jour le formData avec les données récupérées
         setFormData({
           first_name: data.first_name,
           last_name: data.last_name,
-          // Assurez-vous de formater la date pour l'input type="date"
           birth_date: data.birth_date ? new Date(data.birth_date).toISOString().split('T')[0] : '',
-          guardian_email: data.guardian_email || '', // Utilise une chaîne vide si null
-          guardian_phone: data.guardian_phone || ''  // Utilise une chaîne vide si null
+          guardian_email: data.guardian_email || '',
+          guardian_phone: data.guardian_phone || '',
+          selectedClassId: data.class_id // Pré-sélectionne la classe de l'étudiant en mode édition
         });
       }
     } catch (error) {
       console.error('Error fetching student data:', error);
       toast.error('Erro ao carregar dados do aluno');
-      // Redirige en cas d'erreur de chargement (ex: étudiant non trouvé ou non autorisé)
-      navigate(`/classes/${classId}/students`);
+      navigate(`/classes/${classId || ''}/students`); // Redirige de manière sécurisée
+    }
+  };
+
+  // Nouvelle fonction pour récupérer la liste des classes du professeur
+  const fetchClasses = async () => {
+    if (!user?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('classes')
+        .select('id, name')
+        .eq('teacher_id', user.id)
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      setClasses(data || []);
+      // Si aucune classe n'est pré-sélectionnée et qu'il y en a, sélectionner la première par défaut
+      if (!formData.selectedClassId && data && data.length > 0) {
+        setFormData(prev => ({ ...prev, selectedClassId: data[0].id }));
+      }
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+      toast.error('Erro ao carregar turmas.');
     }
   };
 
   // Gère les changements dans les champs du formulaire
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -72,11 +102,19 @@ export const StudentFormPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const { first_name, last_name, birth_date, guardian_email, guardian_phone } = formData;
+      const { first_name, last_name, birth_date, guardian_email, guardian_phone, selectedClassId } = formData;
 
-      // Validation des champs obligatoires (nom et prénom)
+      // Validation des champs obligatoires (nom, prénom)
       if (!first_name.trim() || !last_name.trim()) {
         toast.error('Nome e Sobrenome são obrigatórios.');
+        setLoading(false);
+        return;
+      }
+
+      // NOUVELLE LOGIQUE : Validation de la sélection de classe en mode création
+      if (!isEditing && !selectedClassId) {
+        toast.error('Por favor, selecione uma turma para o aluno.');
+        setLoading(false);
         return;
       }
 
@@ -84,7 +122,6 @@ export const StudentFormPage: React.FC = () => {
       const studentData = {
         first_name: first_name.trim(),
         last_name: last_name.trim(),
-        // Les champs facultatifs sont inclus, s'ils sont vides, ils seront null dans la DB
         birth_date: birth_date || null,
         guardian_email: guardian_email || null,
         guardian_phone: guardian_phone || null,
@@ -96,10 +133,11 @@ export const StudentFormPage: React.FC = () => {
           .from('students')
           .update({
             ...studentData,
-            updated_at: new Date().toISOString(), // Met à jour le timestamp de modification
+            updated_at: new Date().toISOString(),
+            class_id: selectedClassId // Permet de changer la classe en édition
           })
           .eq('id', id)
-          .eq('teacher_id', user?.id); // S'assure que seul le professeur peut modifier ses propres étudiants
+          .eq('teacher_id', user?.id);
 
         if (error) throw error;
         toast.success('Aluno atualizado com sucesso');
@@ -109,16 +147,16 @@ export const StudentFormPage: React.FC = () => {
           .from('students')
           .insert({
             ...studentData,
-            class_id: classId,
-            teacher_id: user?.id, // Associe l'étudiant au professeur connecté
+            class_id: selectedClassId, // Utilise la classe sélectionnée par l'utilisateur
+            teacher_id: user?.id,
           });
 
         if (error) throw error;
         toast.success('Aluno cadastrado com sucesso');
       }
 
-      // Redirige vers la liste des étudiants après succès
-      navigate(`/classes/${classId}/students`);
+      // Redirige vers la liste des étudiants de la classe sélectionnée
+      navigate(`/classes/${selectedClassId || classId}/students`);
     } catch (error) {
       console.error('Error saving student:', error);
       toast.error('Erro ao salvar aluno');
@@ -145,7 +183,7 @@ export const StudentFormPage: React.FC = () => {
           {/* Champs existants */}
           <Input
             label="Nome"
-            name="first_name" // Ajout du nom pour handleChange générique
+            name="first_name"
             value={formData.first_name}
             onChange={handleChange}
             required
@@ -154,18 +192,42 @@ export const StudentFormPage: React.FC = () => {
 
           <Input
             label="Sobrenome"
-            name="last_name" // Ajout du nom pour handleChange générique
+            name="last_name"
             value={formData.last_name}
             onChange={handleChange}
             required
             fullWidth
           />
 
+          {/* Sélecteur de classe (uniquement en mode création) */}
+          {!isEditing && (
+            <div>
+              <label htmlFor="selectedClassId" className="block text-sm font-medium text-gray-700 mb-1">
+                Turma <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="selectedClassId"
+                name="selectedClassId"
+                value={formData.selectedClassId}
+                onChange={handleChange}
+                required // Rendre obligatoire la sélection d'une classe en mode création
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+              >
+                <option value="" disabled>Selecione uma turma</option>
+                {classes.map((cls) => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Nouveaux champs facultatifs */}
           <Input
             label="Data de Nascimento (Opcional)"
             type="date"
-            name="birth_date" // Nom de la colonne Supabase
+            name="birth_date"
             value={formData.birth_date}
             onChange={handleChange}
             fullWidth
@@ -174,7 +236,7 @@ export const StudentFormPage: React.FC = () => {
           <Input
             label="Email do Representante Legal (Opcional)"
             type="email"
-            name="guardian_email" // Nom de la colonne Supabase
+            name="guardian_email"
             value={formData.guardian_email}
             onChange={handleChange}
             fullWidth
@@ -182,11 +244,11 @@ export const StudentFormPage: React.FC = () => {
 
           <Input
             label="Telefone do Representante Legal (Opcional)"
-            type="tel" // Type pour les numéros de téléphone
-            name="guardian_phone" // Nom de la colonne Supabase
+            type="tel"
+            name="guardian_phone"
             value={formData.guardian_phone}
             onChange={handleChange}
-            placeholder="(XX) XXXXX-XXXX" // Exemple de format brésilien
+            placeholder="(XX) XXXXX-XXXX"
             fullWidth
           />
 
@@ -194,7 +256,7 @@ export const StudentFormPage: React.FC = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate(`/classes/${classId}/students`)}
+              onClick={() => navigate(`/classes/${formData.selectedClassId || classId || ''}/students`)} // Retourne à la liste des étudiants de la classe sélectionnée ou à la page des classes
             >
               Cancelar
             </Button>
