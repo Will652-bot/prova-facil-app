@@ -572,7 +572,7 @@ export const StandardReport: React.FC = () => {
       </Card>
 
       <div className="flex justify-end">
-        {isProFeatureEnabled ? ( {/* Utilisation de isProFeatureEnabled */}
+        {isProFeatureEnabled ? ( 
           <Button
             onClick={handleExportPDF}
             leftIcon={<Download className="h-4 w-4" />}
