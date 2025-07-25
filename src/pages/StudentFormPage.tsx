@@ -15,7 +15,7 @@ export const StudentFormPage: React.FC = () => {
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
-    // Nouveaux champs facultatifs
+    // Nouveaux champs facultatifs, noms alignés avec la DB
     birth_date: '', // Initialisé comme chaîne vide pour l'input type="date"
     guardian_email: '',
     guardian_phone: ''
