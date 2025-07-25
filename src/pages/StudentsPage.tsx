@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
+// Mise à jour de l'interface Student pour inclure les nouveaux champs facultatifs
 interface Student {
   id: string;
   first_name: string;
@@ -16,6 +17,10 @@ interface Student {
   class_id: string;
   teacher_id: string;
   created_at: string;
+  // Nouveaux champs facultatifs, noms alignés avec la DB
+  birth_date?: string; // Date de naissance (format 'YYYY-MM-DD' de PostgreSQL DATE)
+  guardian_email?: string; // Email du représentant légal
+  guardian_phone?: string; // Téléphone du représentant légal
 }
 
 export const StudentsPage: React.FC = () => {
@@ -33,13 +38,14 @@ export const StudentsPage: React.FC = () => {
     studentName: ''
   });
 
+  // Effet pour charger les données de la classe et des étudiants
   useEffect(() => {
     fetchClassAndStudents();
-  }, [classId, user?.id, sortOrder]);
+  }, [classId, user?.id, sortOrder]); // Dépendances pour recharger les données
 
   const fetchClassAndStudents = async () => {
     try {
-      // Fetch class name
+      // Récupération du nom de la classe
       const { data: classData, error: classError } = await supabase
         .from('classes')
         .select('name')
@@ -52,10 +58,11 @@ export const StudentsPage: React.FC = () => {
         setClassName(classData.name);
       }
 
-      // Fetch students with teacher_id filter
+      // Récupération des étudiants avec teacher_id filter
+      // Le select('*') récupérera automatiquement les nouveaux champs une fois ajoutés à la DB Supabase
       const { data: studentsData, error: studentsError } = await supabase
         .from('students')
-        .select('*')
+        .select('*') // 'select(*)' inclura les nouveaux champs
         .eq('class_id', classId)
         .eq('teacher_id', user?.id)
         .order('first_name', { ascending: sortOrder === 'asc' });
@@ -70,6 +77,7 @@ export const StudentsPage: React.FC = () => {
     }
   };
 
+  // Gestion de l'ouverture de la boîte de dialogue de confirmation de suppression
   const handleDeleteClick = (id: string, name: string) => {
     setConfirmDialog({
       isOpen: true,
@@ -78,42 +86,45 @@ export const StudentsPage: React.FC = () => {
     });
   };
 
+  // Gestion de la confirmation de suppression d'un étudiant et de ses évaluations
   const handleConfirmDelete = async () => {
     try {
-      // First delete all evaluations associated with the student
+      // Suppression de toutes les évaluations associées à l'étudiant
       const { error: evaluationsError } = await supabase
         .from('evaluations')
         .delete()
         .eq('student_id', confirmDialog.studentId)
-        .eq('teacher_id', user?.id);
+        .eq('teacher_id', user?.id); // S'assurer que seul le professeur peut supprimer ses évaluations
 
       if (evaluationsError) throw evaluationsError;
 
-      // Then delete the student
+      // Suppression de l'étudiant
       const { error: studentError } = await supabase
         .from('students')
         .delete()
         .eq('id', confirmDialog.studentId)
-        .eq('teacher_id', user?.id);
+        .eq('teacher_id', user?.id); // S'assurer que seul le professeur peut supprimer ses étudiants
 
       if (studentError) throw studentError;
 
       toast.success('Aluno excluído com sucesso');
-      fetchClassAndStudents();
+      fetchClassAndStudents(); // Recharger la liste des étudiants après suppression
     } catch (error) {
       console.error('Error deleting student:', error);
       toast.error('Erro ao excluir aluno');
     } finally {
-      setConfirmDialog({ isOpen: false, studentId: '', studentName: '' });
+      setConfirmDialog({ isOpen: false, studentId: '', studentName: '' }); // Fermer la boîte de dialogue
     }
   };
 
-  const filteredStudents = students.filter(student => 
+  // Filtrage des étudiants basé sur le terme de recherche
+  const filteredStudents = students.filter(student =>
     `${student.first_name} ${student.last_name}`
       .toLowerCase()
       .includes(searchTerm.toLowerCase())
   );
 
+  // Bascule de l'ordre de tri (ascendant/descendant)
   const toggleSort = () => {
     setSortOrder(current => current === 'asc' ? 'desc' : 'asc');
   };
@@ -133,6 +144,7 @@ export const StudentsPage: React.FC = () => {
           <Button
             variant="outline"
             onClick={() => navigate('/classes')}
+            // leftIcon={<ArrowLeft className="h-4 w-4" />} // Exemple d'icône de retour
           >
             Voltar
           </Button>
@@ -170,6 +182,7 @@ export const StudentsPage: React.FC = () => {
 
         {loading ? (
           <div className="p-8 text-center">
+            {/* Icône de chargement */}
             <div className="animate-spin h-8 w-8 border-4 border-primary-500 rounded-full border-t-transparent mx-auto"></div>
             <p className="mt-2 text-gray-500">Carregando alunos...</p>
           </div>
@@ -197,6 +210,12 @@ export const StudentsPage: React.FC = () => {
                   <h3 className="text-lg font-medium text-gray-900">
                     {student.first_name} {student.last_name}
                   </h3>
+                  {/* Vous pouvez choisir d'afficher les nouvelles informations ici si pertinent pour cette vue.
+                      Par exemple:
+                      {student.birth_date && <p className="text-sm text-gray-600">Nascimento: {student.birth_date}</p>}
+                      {student.guardian_email && <p className="text-sm text-gray-600">Email Responsável: {student.guardian_email}</p>}
+                      {student.guardian_phone && <p className="text-sm text-gray-600">Telefone Responsável: {student.guardian_phone}</p>}
+                  */}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
@@ -232,6 +251,11 @@ export const StudentsPage: React.FC = () => {
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmDialog({ isOpen: false, studentId: '', studentName: '' })}
       />
+
+      {/* Mention LGPD ajoutée en bas de page */}
+      <p className="text-xs text-gray-500 text-center mt-8">
+        Essas informações são gerenciadas em conformidade com a Lei Geral de Proteção de Dados (LGPD).
+      </p>
     </div>
   );
 };
