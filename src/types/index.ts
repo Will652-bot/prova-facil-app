@@ -5,7 +5,7 @@ export interface User {
   email: string;
   full_name: string | null;
   role: 'teacher' | 'admin';
-  current_plan: 'free' | 'pro';
+  current_plan: 'free' | 'pro' | 'pro_trial'; // <-- MODIFIÉ : Ajout de 'pro_trial'
   pro_trial_enabled?: boolean;
   pro_trial_start_date?: string | null;
   pro_subscription_active?: boolean;
@@ -14,6 +14,8 @@ export interface User {
   stripe_customer_id?: string | null;
   stripe_subscription_id?: string | null;
   created_at: string;
+  // NOUVELLE PROPRIÉTÉ CALCULÉE POUR FACILITER L'UTILISATION DU PLAN PRO / ESSAI
+  isProOrTrial?: boolean; // <-- AJOUTÉ : Indique si l'utilisateur est sur un plan Pro ou en essai Pro
 }
 
 export interface Student {
@@ -23,6 +25,10 @@ export interface Student {
   email: string;
   created_at: string;
   teacher_id: string;
+  // <-- AJOUTÉ : Nouveaux champs facultatifs pour l'étudiant
+  birth_date?: string;
+  guardian_email?: string;
+  guardian_phone?: string;
 }
 
 export interface Class {
