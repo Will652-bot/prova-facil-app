@@ -114,7 +114,11 @@ export default function SettingsPage() {
       .select('teachertype_id')
       .eq('user_id', user.id);
 
-    if (error) return;
+    if (error) {
+      console.error("Error checking demo data status:", error);
+      // Ne pas afficher de toast ici, car c'est une vérification en arrière-plan
+      return;
+    }
 
     const status: { [key: string]: boolean } = {};
     data.forEach((e) => {
@@ -176,14 +180,15 @@ export default function SettingsPage() {
             if (res.error) {
               allSucceeded = false; // Marquer l'échec
               console.error(`Erro ao gerar dados para ${key}:`, res.error);
-              toast.error(`Erro ao gerar dados: ${key} (${res.error.message || res.error.details || 'erro desconhecido'})`); // Message d'erreur plus détaillé
+              // Amélioration du message d'erreur pour la création
+              toast.error(`Erro ao gerar dados para ${key}: ${res.error.message || 'erro desconhecido'}. Por favor, verifique os logs.`);
             } else {
               createdCount++; // Incrémenter le compteur de succès
             }
           } catch (e: any) { // Attraper les erreurs réseau, etc.
             allSucceeded = false; // Marquer l'échec
             console.error(`Erro inesperado ao gerar dados para ${key}:`, e);
-            toast.error(`Erro inesperado ao gerar dados: ${key} (${e.message || 'erro desconhecido'})`); // Message d'erreur plus détaillé
+            toast.error(`Erro inesperado ao gerar dados para ${key}: ${e.message || 'erro desconhecido'}.`);
           }
         } else {
           allSucceeded = false; // Marquer l'échec si la fonction n'est pas trouvée
@@ -197,22 +202,29 @@ export default function SettingsPage() {
         toast.success(`Dados de demonstração criados com sucesso para ${createdCount} tipo(s)!`);
     } else if (!allSucceeded) {
         toast.error('O processo de geração de dados de demonstração foi concluído com erros.');
-    } else { // createdCount est 0 et allSucceeded est true (aucun nouveau tipo a criar)
+    } else { // createdCount est 0 et allSucceeded est true (aucun novo tipo a criar)
         toast.info('Nenhum dado de demonstração novo foi criado.');
     }
     checkExistingDemoData(); // Re-vérifier l'état dos dados de démo depois de tudo
   };
 
+  // FONCTION DE SUPPRESSION DE DONNÉES DE DÉMONSTRATION - MODIFIÉE POUR UNE MEILLEURE UX
   const deleteDemoData = async () => {
-    if (!user?.id || !user?.email) { // S'assurer que user.id et user.email sont disponibles
-      toast.error('Informações de l\'utilisateur incompletas para l\'exclusion.');
+    if (!user?.id || !user?.email) {
+      toast.error('Informações de l\'utilisateur incompletas para l\'exclusão.');
       return;
     }
-    let allSucceeded = true; // Drapeau pour le succès global
-    let deletedCount = 0;    // Compteur des suppressions réussies
+    let allSucceeded = true;
+    let deletedCount = 0;
 
-    // MODIFICATION CLÉ ICI : Itérer sur selectedTeacherTypes au lieu de savedTeacherTypes
-    for (const id of selectedTeacherTypes) {
+    // Itérer sur les types de professeur sélectionnés pour lesquels des données de démo existent
+    // Note: Utilise savedTeacherTypes pour savoir quels types de démo le professeur a *actuellement*
+    // Si l'intention est de supprimer les données de démo pour les types *sélectionnés dans le sélecteur*,
+    // alors il faudrait utiliser 'selectedTeacherTypes' ici.
+    // Pour l'instant, je maintiens 'savedTeacherTypes' pour la cohérence avec le comportement initial.
+    // Si vous voulez supprimer les démos des types *actuellement cochés* dans le sélecteur,
+    // remplacez 'savedTeacherTypes' par 'selectedTeacherTypes'.
+    for (const id of savedTeacherTypes) {
       if (demoDataStatus[id]) { // Seulement si les données de démo existent pour ce type
         try {
           const res = await supabase.rpc('delete_demo_data_by_type', {
@@ -220,17 +232,27 @@ export default function SettingsPage() {
             p_user_email: user.email,
             p_teachertype_id: id,
           });
+
           if (res.error) {
             allSucceeded = false; // Marquer l'échec
             console.error(`Erro ao excluir dados para tipo ${id}:`, res.error);
-            toast.error(`Erro ao excluir dados: ${id} (${res.error.message || res.error.details || 'erro desconhecido'})`); // Message d'erreur plus détaillé
+
+            // LOGIQUE CLÉ : Gérer l'erreur de violation de clé étrangère
+            if (res.error.code === '23503' || res.error.message.includes('foreign key constraint')) {
+              toast.error(
+                'Para ser excluído, este jogo de dados de demonstração precisa que você exclua os elementos que você adicionou a ele.'
+              );
+            } else {
+              // Message d'erreur générique pour les autres types d'erreurs techniques
+              toast.error(`Erro ao excluir dados para tipo ${id}: ${res.error.message || 'erro desconhecido'}. Por favor, tente novamente.`);
+            }
           } else {
             deletedCount++; // Incrémenter le compteur de succès
           }
         } catch (e: any) { // Attraper les erreurs réseau, etc.
           allSucceeded = false; // Marquer l'échec
           console.error(`Erro inesperado ao excluir dados para tipo ${id}:`, e);
-          toast.error(`Erro inesperado ao excluir dados: ${id} (${e.message || 'erro desconhecido'})`); // Message d'erreur plus détaillé
+          toast.error(`Erro inesperado ao excluir dados para tipo ${id}: ${e.message || 'erro desconhecido'}.`);
         }
       }
     }
@@ -289,7 +311,7 @@ export default function SettingsPage() {
             + Criar um conjunto de dados de demonstração
           </Button>
           <Button
-            onClick={deleteDemoData}
+            onClick={deleteDemoData} // Appel de la fonction modifiée
             disabled={!hasAnyDemo}
             variant="ghost"
           >
