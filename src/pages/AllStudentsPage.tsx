@@ -15,7 +15,7 @@ interface Student {
   last_name: string;
   class_id: string;
   teacher_id: string;
-  // Ajout des nouveaux champs facultatifs
+  // Ajout des nouveaux champs facultatifs, noms alignés avec la DB
   birth_date?: string; // Date de naissance (format 'YYYY-MM-DD' de PostgreSQL DATE)
   guardian_email?: string; // Email du représentant légal
   guardian_phone?: string; // Téléphone du représentant légal
