@@ -7,7 +7,7 @@ import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext'; // Importation de useAuth
 import toast from 'react-hot-toast';
 import { formatDateShort } from '../lib/utils';
 
@@ -43,7 +43,7 @@ interface Class {
 interface EvaluationTitleItemProps {
   title: EvaluationTitle;
   classes: Class[];
-  user: any;
+  user: any; // user object from useAuth
   uploadingFile: string | null;
   uploadProgress: {[key: string]: number};
   uploadError: {[key: string]: string};
@@ -59,7 +59,7 @@ interface EvaluationTitleItemProps {
 const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
   title,
   classes,
-  user,
+  user, // Passé en prop depuis le parent
   uploadingFile,
   uploadProgress,
   uploadError,
@@ -78,8 +78,9 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
   const [editedTitle, setEditedTitle] = useState(title.title);
   const [isUpdatingTitle, setIsUpdatingTitle] = useState(false);
 
-  // ✅ CORRECTION: Détection correcte du plan Pro
-  const isPro = user?.current_plan === 'pro' || user?.pro_subscription_active === true;
+  // ✅ CORRECTION: Utilisation de la propriété calculée isProOrTrial du contexte d'authentification
+  // Cette propriété est maintenant disponible via la prop 'user' passée du composant parent.
+  const isProFeatureEnabled = user?.isProOrTrial;
 
   const handleClassChange = (classId: string) => {
     setSelectedClassId(classId);
@@ -146,8 +147,8 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
-    // ✅ CORRECTION: Vérification du plan Pro
-    if (!isPro) {
+    // ✅ CORRECTION: Vérification du plan Pro Feature Enabled
+    if (!isProFeatureEnabled) {
       toast.error('Funcionalidade exclusiva para usuários do plano Pro');
       return;
     }
@@ -307,9 +308,9 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              Anexar PDF {!isPro && <span className="text-orange-600">(Pro)</span>}
+              Anexar PDF {!isProFeatureEnabled && <span className="text-orange-600">(Pro)</span>} {/* Utilisation de isProFeatureEnabled */}
             </label>
-            {isPro ? (
+            {isProFeatureEnabled ? ( {/* Utilisation de isProFeatureEnabled */}
               <Button
                 type="button"
                 variant="outline"
@@ -340,10 +341,10 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
                 </div>
               </div>
             )}
-            {!selectedClassId && isPro && (
+            {!selectedClassId && isProFeatureEnabled && ( {/* Utilisation de isProFeatureEnabled */}
               <p className="text-xs text-orange-600 mt-1">Selecione uma turma primeiro</p>
             )}
-            {!isPro && (
+            {!isProFeatureEnabled && ( {/* Utilisation de isProFeatureEnabled */}
               <p className="text-xs text-blue-600 mt-1">
                 Upgrade para o Plano Pro para anexar PDFs
               </p>
@@ -441,7 +442,7 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
 
 export const EvaluationTitlesPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuth(); // Utilisation de useAuth
   const [titles, setTitles] = useState<EvaluationTitle[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
@@ -462,12 +463,13 @@ export const EvaluationTitlesPage: React.FC = () => {
     isAttachment: false
   });
 
-  // ✅ CORRECTION: Détection correcte du plan Pro
-  const isPro = user?.current_plan === 'pro' || user?.pro_subscription_active === true;
+  // ✅ CORRECTION: Utilisation de la propriété calculée isProOrTrial du contexte d'authentification
+  // Cette propriété prend en compte les abonnements Pro actifs ET les essais Pro valides.
+  const isProFeatureEnabled = user?.isProOrTrial;
 
   useEffect(() => {
     fetchData();
-  }, [user, sortOrder]);
+  }, [user, sortOrder]); // Dépend de user pour le rechargement si le statut Pro change
 
   const fetchData = async () => {
     try {
@@ -633,8 +635,8 @@ export const EvaluationTitlesPage: React.FC = () => {
   };
 
   const handleFileUpload = async (titleId: string, file: File, classId: string) => {
-    // ✅ CORRECTION: Vérification du plan Pro
-    if (!isPro) {
+    // ✅ CORRECTION: Vérification du plan Pro Feature Enabled
+    if (!isProFeatureEnabled) {
       toast.error('Funcionalidade exclusiva para usuários do plano Pro');
       return;
     }
@@ -661,14 +663,14 @@ export const EvaluationTitlesPage: React.FC = () => {
 
     try {
       setUploadingFile(titleId);
-      setUploadProgress({...uploadProgress, [titleId]: 0});
-      setUploadError({...uploadError, [titleId]: ''});
+      setUploadProgress(prev => ({...prev, [titleId]: 0})); // Utiliser prev pour éviter les problèmes de fermeture
+      setUploadError(prev => ({...prev, [titleId]: ''})); // Utiliser prev
 
-      // Check if title already has an attachment for this class
+      // Check if title already has an attachment for this titleId and classId
       const { data: existingAttachment, error: checkError } = await supabase
         .from('evaluation_attachments')
         .select('*')
-        .eq('evaluation_title_id', titleId)
+        .eq('evaluation_title_id', titleId) // Correctement lié au titre d'évaluation
         .eq('class_id', classId)
         .eq('teacher_id', user?.id)
         .maybeSingle();
@@ -677,9 +679,11 @@ export const EvaluationTitlesPage: React.FC = () => {
 
       // Generate unique filename
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const title = titles.find(t => t.id === titleId)?.title || 'document';
-      const sanitizedTitle = title.replace(/[^a-zA-Z0-9]/g, '_');
+      const titleObj = titles.find(t => t.id === titleId); // Trouver le titre pour son nom
+      const titleName = titleObj?.title || 'document';
+      const sanitizedTitle = titleName.replace(/[^a-zA-Z0-9]/g, '_');
       const fileExt = file.name.split('.').pop();
+      // Chemin de stockage: teacher_id/evaluation_title_id/sanitized_title_timestamp.pdf
       const fileName = `${user.id}/${titleId}/${sanitizedTitle}_${timestamp}.${fileExt}`;
 
       // If attachment exists, delete the old file first
@@ -696,7 +700,7 @@ export const EvaluationTitlesPage: React.FC = () => {
         .upload(fileName, file, {
           onUploadProgress: (progress) => {
             const percent = Math.round((progress.loaded / progress.total) * 100);
-            setUploadProgress({...uploadProgress, [titleId]: percent});
+            setUploadProgress(prev => ({...prev, [titleId]: percent})); // Utiliser prev
           }
         });
 
@@ -709,7 +713,8 @@ export const EvaluationTitlesPage: React.FC = () => {
           .update({
             file_path: fileName,
             teacher_id: user?.id,
-            class_id: classId
+            class_id: classId,
+            updated_at: new Date().toISOString() // Mettre à jour le timestamp
           })
           .eq('id', existingAttachment.id);
 
@@ -728,15 +733,15 @@ export const EvaluationTitlesPage: React.FC = () => {
       }
 
       toast.success('Arquivo anexado com sucesso!');
-      fetchData();
+      fetchData(); // Recharger les données pour mettre à jour l'état des attachements
     } catch (error: any) {
       console.error('Error uploading file:', error);
-      setUploadError({...uploadError, [titleId]: error.message || 'Erro ao anexar arquivo'});
+      setUploadError(prev => ({...prev, [titleId]: error.message || 'Erro ao anexar arquivo'})); // Utiliser prev
       toast.error('Erro ao anexar arquivo');
     } finally {
       setUploadingFile(null);
       setTimeout(() => {
-        setUploadProgress({...uploadProgress, [titleId]: 0});
+        setUploadProgress(prev => ({...prev, [titleId]: 0})); // Utiliser prev
       }, 1000);
     }
   };
@@ -745,7 +750,7 @@ export const EvaluationTitlesPage: React.FC = () => {
     try {
       const { data, error } = await supabase.storage
         .from('evaluation-attachments')
-        .createSignedUrl(attachment.file_path, 3600);
+        .createSignedUrl(attachment.file_path, 3600); // URL valide 1 heure
 
       if (error) {
         console.error('Error creating signed URL:', error);
@@ -805,7 +810,7 @@ export const EvaluationTitlesPage: React.FC = () => {
         }
       }
 
-      // Delete the title (attachments will be deleted by cascade)
+      // Delete the title (attachments will be deleted by cascade if FK is set up)
       const { error } = await supabase
         .from('evaluation_titles')
         .delete()
@@ -887,7 +892,7 @@ export const EvaluationTitlesPage: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Títulos da Avaliação</h1>
           <p className="mt-1 text-gray-500">
             Gerencie os títulos das avaliações, associe turmas e anexe documentos PDF
-            {!isPro && (
+            {!isProFeatureEnabled && ( // Utilisation de isProFeatureEnabled
               <span className="block text-blue-600 text-sm mt-1">
                 💡 Upgrade para o Plano Pro para anexar PDFs às avaliações
               </span>
@@ -905,7 +910,7 @@ export const EvaluationTitlesPage: React.FC = () => {
       </div>
 
       {/* ✅ CORRECTION: Banner informatif pour les utilisateurs Free */}
-      {!isPro && (
+      {!isProFeatureEnabled && ( // Utilisation de isProFeatureEnabled
         <Card className="bg-blue-50 border-blue-200">
           <div className="p-4">
             <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
@@ -1038,7 +1043,7 @@ export const EvaluationTitlesPage: React.FC = () => {
                 <EvaluationTitleItem
                   title={title}
                   classes={classes}
-                  user={user}
+                  user={user} // Passe l'objet user au sous-composant
                   uploadingFile={uploadingFile}
                   uploadProgress={uploadProgress}
                   uploadError={uploadError}
