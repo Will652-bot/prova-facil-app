@@ -5,7 +5,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Download, ArrowUpDown, FileSpreadsheet, Lock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext'; // Importation de useAuth
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
@@ -46,7 +46,7 @@ interface EvaluationTitle {
 }
 
 export const CustomReport: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useAuth(); // Utilisation du hook useAuth
   const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState<Class[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -68,8 +68,9 @@ export const CustomReport: React.FC = () => {
   const [conditionalFormatting, setConditionalFormatting] = useState<ConditionalFormatting[]>([]);
   const [studentEvaluationTitles, setStudentEvaluationTitles] = useState<Record<string, Set<string>>>({});
 
-  // ✅ CORRECTION: Détection correcte du plan Pro
-  const isPro = user?.current_plan === 'pro' || user?.pro_subscription_active === true;
+  // ✅ CORRECTION: Utilisation de la propriété calculée isProOrTrial du contexte d'authentification
+  // Cette propriété prend en compte les abonnements Pro actifs ET les essais Pro valides.
+  const isProFeatureEnabled = user?.isProOrTrial;
 
   const fetchInitialData = useCallback(async () => {
     try {
@@ -343,7 +344,8 @@ export const CustomReport: React.FC = () => {
   }, [pivotData, sortConfig]);
 
   const handleExportPDF = useCallback(async () => {
-    if (!isPro) {
+    // Utilisation de isProFeatureEnabled au lieu de isPro
+    if (!isProFeatureEnabled) { 
       toast.error('Funcionalidade exclusiva para usuários do plano Pro');
       return;
     }
@@ -366,10 +368,11 @@ export const CustomReport: React.FC = () => {
       console.error('Error generating PDF:', error);
       toast.error('Erro ao gerar PDF');
     }
-  }, [isPro]);
+  }, [isProFeatureEnabled]); // Dépendance mise à jour
 
   const handleExportExcel = useCallback(() => {
-    if (!isPro) {
+    // Utilisation de isProFeatureEnabled au lieu de isPro
+    if (!isProFeatureEnabled) {
       toast.error('Funcionalidade exclusiva para usuários do plano Pro');
       return;
     }
@@ -397,7 +400,7 @@ export const CustomReport: React.FC = () => {
       console.error('Error generating Excel:', error);
       toast.error('Erro ao gerar Excel');
     }
-  }, [isPro, getSortedData, visibleCriteria]);
+  }, [isProFeatureEnabled, getSortedData, visibleCriteria]); // Dépendance mise à jour
 
   return (
     <div className="space-y-6">
@@ -571,7 +574,7 @@ export const CustomReport: React.FC = () => {
       </Card>
 
       <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
-        {isPro ? (
+        {isProFeatureEnabled ? ( {/* Utilisation de isProFeatureEnabled */}
           <>
             <Button
               onClick={handleExportExcel}
@@ -674,4 +677,3 @@ export const CustomReport: React.FC = () => {
       </div>
     </div>
   );
-};
