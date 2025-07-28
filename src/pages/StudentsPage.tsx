@@ -6,7 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext'; // Importation du hook useAuth
 import toast from 'react-hot-toast';
 
 // Mise à jour de l'interface Student pour inclure les nouveaux champs facultatifs
@@ -26,7 +26,7 @@ interface Student {
 export const StudentsPage: React.FC = () => {
   const navigate = useNavigate();
   const { classId } = useParams();
-  const { user } = useAuth();
+  const { user } = useAuth(); // Utilisation du hook useAuth pour accéder aux informations de l'utilisateur
   const [students, setStudents] = useState<Student[]>([]);
   const [className, setClassName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -37,10 +37,14 @@ export const StudentsPage: React.FC = () => {
     studentId: '',
     studentName: ''
   });
+  // Nouveaux états pour la limite d'étudiants
+  const [totalStudentsCount, setTotalStudentsCount] = useState(0);
+  const FREE_PLAN_STUDENT_LIMIT = 40; // Définition de la limite pour le plan gratuit
 
   // Effet pour charger les données de la classe et des étudiants
   useEffect(() => {
     fetchClassAndStudents();
+    fetchTotalStudentCount(); // Appelle la fonction pour récupérer le nombre total d'étudiants
   }, [classId, user?.id, sortOrder]); // Dépendances pour recharger les données
 
   const fetchClassAndStudents = async () => {
@@ -77,6 +81,25 @@ export const StudentsPage: React.FC = () => {
     }
   };
 
+  // Nouvelle fonction pour récupérer le nombre total d'étudiants du professeur
+  const fetchTotalStudentCount = async () => {
+    if (!user?.id) return;
+    try {
+      const { count, error } = await supabase
+        .from('students')
+        .select('*', { count: 'exact', head: true }) // Récupère seulement le count
+        .eq('teacher_id', user.id);
+
+      if (error) {
+        console.error('Erro ao contar alunos:', error);
+      } else {
+        setTotalStudentsCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Erro inesperado ao contar alunos:', error);
+    }
+  };
+
   // Gestion de l'ouverture de la boîte de dialogue de confirmation de suppression
   const handleDeleteClick = (id: string, name: string) => {
     setConfirmDialog({
@@ -109,6 +132,7 @@ export const StudentsPage: React.FC = () => {
 
       toast.success('Aluno excluído com sucesso');
       fetchClassAndStudents(); // Recharger la liste des étudiants après suppression
+      fetchTotalStudentCount(); // Recharger le compteur total d'étudiants
     } catch (error) {
       console.error('Error deleting student:', error);
       toast.error('Erro ao excluir aluno');
@@ -129,6 +153,10 @@ export const StudentsPage: React.FC = () => {
     setSortOrder(current => current === 'asc' ? 'desc' : 'asc');
   };
 
+  // Déterminer si l'utilisateur peut ajouter plus d'étudiants
+  // user?.isProOrTrial est la propriété calculée dans AuthContext
+  const canAddMoreStudents = user?.isProOrTrial || totalStudentsCount < FREE_PLAN_STUDENT_LIMIT;
+
   return (
     <div className="space-y-6 animate-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -144,13 +172,13 @@ export const StudentsPage: React.FC = () => {
           <Button
             variant="outline"
             onClick={() => navigate('/classes')}
-            // leftIcon={<ArrowLeft className="h-4 w-4" />} // Exemple d'icône de retour
           >
             Voltar
           </Button>
           <Button
             onClick={() => navigate(`/classes/${classId}/students/new`)}
             leftIcon={<Plus className="h-4 w-4" />}
+            disabled={!canAddMoreStudents} // Désactiver le bouton si la limite est atteinte et pas Pro/Trial
           >
             Novo Aluno
           </Button>
@@ -180,6 +208,16 @@ export const StudentsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Message d'information si la limite est atteinte et pas Pro/Trial */}
+        {!canAddMoreStudents && !user?.isProOrTrial && (
+          <div className="p-4 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700">
+            <p className="text-sm">
+              Você atingiu o limite de {FREE_PLAN_STUDENT_LIMIT} alunos para o plano gratuito.
+              Atualize para o Plano Pro para adicionar mais alunos.
+            </p>
+          </div>
+        )}
+
         {loading ? (
           <div className="p-8 text-center">
             {/* Icône de chargement */}
@@ -195,9 +233,17 @@ export const StudentsPage: React.FC = () => {
               className="mt-4"
               onClick={() => navigate(`/classes/${classId}/students/new`)}
               leftIcon={<Plus className="h-4 w-4" />}
+              disabled={!canAddMoreStudents} // Désactiver le bouton ici aussi
             >
               Adicionar Aluno
             </Button>
+            {/* Message d'information si la limite est atteinte (pour le cas où la liste est vide mais la limite est atteinte) */}
+            {!canAddMoreStudents && !user?.isProOrTrial && (
+              <p className="text-sm text-red-500 mt-2">
+                Você atingiu o limite de {FREE_PLAN_STUDENT_LIMIT} alunos para o plano gratuito.
+                Atualize para o Plano Pro para adicionar mais.
+              </p>
+            )}
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
