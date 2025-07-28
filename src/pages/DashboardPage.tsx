@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import TrialPlanBanner from '../components/TrialPlanBanner';
+
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -170,6 +172,8 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in">
+      <TrialPlanBanner />
+
       {/* Demo Data Banner */}
       {showDemoBanner && (
         <Card className="bg-gradient-to-r from-primary-50 to-secondary-50 border-primary-200">
