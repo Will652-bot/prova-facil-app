@@ -5,14 +5,26 @@ export interface User {
   email: string;
   full_name: string | null;
   role: 'teacher' | 'admin';
-  current_plan: 'free' | 'pro';
+
+  // ✅ Ajout de 'pro_trial'
+  current_plan: 'free' | 'pro' | 'pro_trial';
+
+  // ✅ Champs trial
   pro_trial_enabled?: boolean;
   pro_trial_start_date?: string | null;
+
+  // ✅ Champs abonnement pro
   pro_subscription_active?: boolean;
   subscription_start_date?: string | null;
   subscription_expires_at?: string | null;
+
+  // ✅ Champs Stripe
   stripe_customer_id?: string | null;
   stripe_subscription_id?: string | null;
+
+  // ✅ Champ calculé injecté dans AuthContext
+  isProOrTrial?: boolean;
+
   created_at: string;
 }
 
