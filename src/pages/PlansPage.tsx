@@ -8,6 +8,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
+import TrialPlanBanner from '@/components/TrialPlanBanner';
+
+<TrialPlanBanner />
+
+
 export const PlansPage: React.FC = () => {
   const { user } = useAuth();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
