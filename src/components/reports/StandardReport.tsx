@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { Download, Lock } from 'lucide-react';
+import { Download, Lock } from 'lucide-react'; // Retiré FileSpreadsheet
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext'; // Importation de useAuth
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -19,6 +19,7 @@ import {
 import { Bar, Radar } from 'react-chartjs-2';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+// Retiré l'importation de XLSX
 import toast from 'react-hot-toast';
 
 // Enregistrement des composants Chart.js
@@ -40,7 +41,7 @@ interface EvaluationTitle {
 }
 
 export const StandardReport: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useAuth(); // Utilisation du hook useAuth
   const [loading, setLoading] = useState(true);
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [selectedCriteria, setSelectedCriteria] = useState<string[]>([]);
@@ -66,7 +67,9 @@ export const StandardReport: React.FC = () => {
     lowPerformance: [],
   });
 
-  const isPro = user?.current_plan === 'pro' || user?.pro_subscription_active === true;
+  // ✅ CORRECTION: Utilisation de la propriété calculée isProOrTrial du contexte d'authentification
+  // Cette propriété prend en compte les abonnements Pro actifs ET les essais Pro valides.
+  const isProFeatureEnabled = user?.isProOrTrial;
 
   // --- fetchInitialData : Charge les listes de classes, critères, titres ---
   const fetchInitialData = useCallback(async (signal: AbortSignal) => {
@@ -292,7 +295,7 @@ export const StandardReport: React.FC = () => {
   }, [classes, criteria, evaluationTitles]);
 
   const handleExportPDF = useCallback(async () => {
-    if (!isPro) {
+    if (!isProFeatureEnabled) { // Utilisation de isProFeatureEnabled
       toast.error('Funcionalidade exclusiva para usuários do plano Pro');
       return;
     }
@@ -315,7 +318,10 @@ export const StandardReport: React.FC = () => {
       console.error('Error generating PDF:', error);
       toast.error('Erro ao gerar PDF.'); 
     }
-  }, [isPro]);
+  }, [isProFeatureEnabled]);
+
+  // Retiré la fonction handleExportExcel car elle n'est pas requise pour StandardReport.tsx
+
 
   // Options pour le Bar Chart (Desempenho por Turma)
   // CONSERVEES : Options robustes de Chart.js
@@ -337,11 +343,9 @@ export const StandardReport: React.FC = () => {
                         label += ': ';
                     }
                     if (typeof context.parsed.y === 'number' && !isNaN(context.parsed.y)) {
-                        label += context.parsed.y.toFixed(1) + '%';
-                    } else {
-                        label += 'N/A'; 
+                        return label + context.parsed.y.toFixed(1) + '%'; 
                     }
-                    return label;
+                    return label + 'N/A';
                 }
             }
         }
@@ -392,11 +396,9 @@ export const StandardReport: React.FC = () => {
                         label += ': ';
                     }
                     if (typeof context.parsed.r === 'number' && !isNaN(context.parsed.r)) { 
-                        label += context.parsed.r.toFixed(1) + '%';
-                    } else {
-                        label += 'N/A'; 
+                        return label + context.parsed.r.toFixed(1) + '%';
                     }
-                    return label;
+                    return label + 'N/A'; 
                 }
             }
         }
@@ -420,7 +422,7 @@ export const StandardReport: React.FC = () => {
         },
         title: {
             display: true,
-            text: 'Moyenne (%)' 
+            text: 'Média (%)' 
         }
       },
     },
@@ -480,7 +482,7 @@ export const StandardReport: React.FC = () => {
                   onClick={() => handleSelectAll('titles')}
                   className="w-full"
                 >
-                  Selecionar Todas
+                  Selecionar Todos
                 </Button>
                 <div className="max-h-48 overflow-y-auto border rounded-md p-2">
                   {evaluationTitles.map((title) => (
@@ -570,7 +572,7 @@ export const StandardReport: React.FC = () => {
       </Card>
 
       <div className="flex justify-end">
-        {isPro ? (
+        {isProFeatureEnabled ? ( 
           <Button
             onClick={handleExportPDF}
             leftIcon={<Download className="h-4 w-4" />}
