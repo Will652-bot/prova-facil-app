@@ -59,7 +59,7 @@ interface EvaluationTitleItemProps {
 const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
   title,
   classes,
-  user, // Passé en prop depuis le parent
+  user,
   uploadingFile,
   uploadProgress,
   uploadError,
@@ -78,8 +78,6 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
   const [editedTitle, setEditedTitle] = useState(title.title);
   const [isUpdatingTitle, setIsUpdatingTitle] = useState(false);
 
-  // ✅ CORRECTION: Utilisation de la propriété calculée isProOrTrial du contexte d'authentification
-  // Cette propriété est maintenant disponible via la prop 'user' passée du composant parent.
   const isProFeatureEnabled = user?.isProOrTrial;
 
   const handleClassChange = (classId: string) => {
@@ -147,7 +145,6 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
     e.preventDefault();
     e.stopPropagation();
     
-    // ✅ CORRECTION: Vérification du plan Pro Feature Enabled
     if (!isProFeatureEnabled) {
       toast.error('Funcionalidade exclusiva para usuários do plano Pro');
       return;
@@ -175,8 +172,15 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
     fileInput.click();
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && selectedClassId) {
+      onFileUpload(title.id, file, selectedClassId);
+    }
+  };
+
   return (
-    <div className="p-4 sm:p-6 bg-white hover:bg-gray-50 transition-colors rounded-lg border border-gray-200 group">
+    <div className="p-4 sm:p-6 bg-white hover:bg-gray-50 transition-colors rounded-lg border border-gray-200 group" onClick={e => e.stopPropagation()}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
         <div className="flex-1 mb-4 sm:mb-0">
           <div className="flex items-center space-x-2 mb-2">
@@ -308,9 +312,9 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              Anexar PDF {!isProFeatureEnabled && <span className="text-orange-600">(Pro)</span>} {/* Utilisation de isProFeatureEnabled */}
+              Anexar PDF {!isProFeatureEnabled && <span className="text-orange-600">(Pro)</span>}
             </label>
-            {isProFeatureEnabled ? ( /* Utilisation de isProFeatureEnabled */
+            {isProFeatureEnabled ? (
               <label className={`
                 flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium 
                 border border-gray-300 rounded-md shadow-sm cursor-pointer transition-colors
@@ -318,7 +322,7 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                   : 'bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
                 }
-              `}>
+              `} onClick={handleFileUploadClick}>
                 <Upload className="mr-2 h-4 w-4" />
                 <span>
                   {uploadingFile === title.id ? 'Enviando...' : 'Selecionar PDF'}
@@ -326,7 +330,7 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
                 <input
                   type="file"
                   accept=".pdf"
-                  onChange={handleFileUploadClick}
+                  onChange={handleFileChange}
                   disabled={uploadingFile === title.id || !selectedClassId}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                 />
@@ -350,10 +354,10 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
                 </div>
               </div>
             )}
-            {!selectedClassId && isProFeatureEnabled && ( /* Utilisation de isProFeatureEnabled */
+            {!selectedClassId && isProFeatureEnabled && (
               <p className="text-xs text-orange-600 mt-1">Selecione uma turma primeiro</p>
             )}
-            {!isProFeatureEnabled && ( /* Utilisation de isProFeatureEnabled */
+            {!isProFeatureEnabled && (
               <p className="text-xs text-blue-600 mt-1">
                 Upgrade para o Plano Pro para anexar PDFs
               </p>
@@ -451,7 +455,7 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
 
 export const EvaluationTitlesPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth(); // Utilisation de useAuth
+  const { user } = useAuth();
   const [titles, setTitles] = useState<EvaluationTitle[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
@@ -472,19 +476,16 @@ export const EvaluationTitlesPage: React.FC = () => {
     isAttachment: false
   });
 
-  // ✅ CORRECTION: Utilisation de la propriété calculée isProOrTrial du contexte d'authentification
-  // Cette propriété prend en compte les abonnements Pro actifs ET les essais Pro valides.
   const isProFeatureEnabled = user?.isProOrTrial;
 
   useEffect(() => {
     fetchData();
-  }, [user, sortOrder]); // Dépend de user pour le rechargement si le statut Pro change
+  }, [user, sortOrder]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       
-      // ✅ CORRECTION: Fetch ALL evaluation titles for the teacher
       const { data: titlesData, error: titlesError } = await supabase
         .from('evaluation_titles')
         .select(`
@@ -502,7 +503,6 @@ export const EvaluationTitlesPage: React.FC = () => {
 
       console.log('📊 Títulos carregados:', titlesData?.length || 0);
 
-      // Process titles to add has_attachment flag and class info
       const processedTitles = (titlesData || []).map(title => ({
         ...title,
         class_id: title.class?.id || null,
@@ -511,7 +511,6 @@ export const EvaluationTitlesPage: React.FC = () => {
         attachments: title.evaluation_attachments || []
       }));
 
-      // Fetch classes for dropdown
       const { data: classesData, error: classesError } = await supabase
         .from('classes')
         .select('*')
@@ -582,10 +581,8 @@ export const EvaluationTitlesPage: React.FC = () => {
       setSelectedClassForNewTitle('');
       setShowCreateForm(false);
       
-      // Mark as new and refresh data
       await fetchData();
       
-      // Remove "new" badge after 5 seconds
       setTimeout(() => {
         setTitles(prev => prev.map(title => 
           title.id === insertedData.id ? { ...title, is_new: false } : title
@@ -613,7 +610,6 @@ export const EvaluationTitlesPage: React.FC = () => {
 
       if (error) throw error;
 
-      // Update local state
       setTitles(prev => prev.map(title => 
         title.id === titleId ? { ...title, title: newTitle } : title
       ));
@@ -644,7 +640,6 @@ export const EvaluationTitlesPage: React.FC = () => {
   };
 
   const handleFileUpload = async (titleId: string, file: File, classId: string) => {
-    // ✅ CORRECTION: Vérification du plan Pro Feature Enabled
     if (!isProFeatureEnabled) {
       toast.error('Funcionalidade exclusiva para usuários do plano Pro');
       return;
@@ -672,30 +667,26 @@ export const EvaluationTitlesPage: React.FC = () => {
 
     try {
       setUploadingFile(titleId);
-      setUploadProgress(prev => ({...prev, [titleId]: 0})); // Utiliser prev pour éviter les problèmes de fermeture
-      setUploadError(prev => ({...prev, [titleId]: ''})); // Utiliser prev
+      setUploadProgress(prev => ({...prev, [titleId]: 0}));
+      setUploadError(prev => ({...prev, [titleId]: ''}));
 
-      // Check if title already has an attachment for this titleId and classId
       const { data: existingAttachment, error: checkError } = await supabase
         .from('evaluation_attachments')
         .select('*')
-        .eq('evaluation_title_id', titleId) // Correctement lié au titre d'évaluation
+        .eq('evaluation_title_id', titleId)
         .eq('class_id', classId)
         .eq('teacher_id', user?.id)
         .maybeSingle();
 
       if (checkError && checkError.code !== 'PGRST116') throw checkError;
 
-      // Generate unique filename
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const titleObj = titles.find(t => t.id === titleId); // Trouver le titre pour son nom
+      const titleObj = titles.find(t => t.id === titleId);
       const titleName = titleObj?.title || 'document';
       const sanitizedTitle = titleName.replace(/[^a-zA-Z0-9]/g, '_');
       const fileExt = file.name.split('.').pop();
-      // Chemin de stockage: teacher_id/evaluation_title_id/sanitized_title_timestamp.pdf
       const fileName = `${user.id}/${titleId}/${sanitizedTitle}_${timestamp}.${fileExt}`;
 
-      // If attachment exists, delete the old file first
       if (existingAttachment) {
         const oldFilePath = existingAttachment.file_path;
         await supabase.storage
@@ -703,19 +694,17 @@ export const EvaluationTitlesPage: React.FC = () => {
           .remove([oldFilePath]);
       }
 
-      // Upload to Supabase Storage
       const { error: storageUploadError } = await supabase.storage
         .from('evaluation-attachments')
         .upload(fileName, file, {
           onUploadProgress: (progress) => {
             const percent = Math.round((progress.loaded / progress.total) * 100);
-            setUploadProgress(prev => ({...prev, [titleId]: percent})); // Utiliser prev
+            setUploadProgress(prev => ({...prev, [titleId]: percent}));
           }
         });
 
       if (storageUploadError) throw storageUploadError;
 
-      // Save or update attachment record
       if (existingAttachment) {
         const { error: updateError } = await supabase
           .from('evaluation_attachments')
@@ -723,7 +712,7 @@ export const EvaluationTitlesPage: React.FC = () => {
             file_path: fileName,
             teacher_id: user?.id,
             class_id: classId,
-            updated_at: new Date().toISOString() // Mettre à jour le timestamp
+            updated_at: new Date().toISOString()
           })
           .eq('id', existingAttachment.id);
 
@@ -742,15 +731,15 @@ export const EvaluationTitlesPage: React.FC = () => {
       }
 
       toast.success('Arquivo anexado com sucesso!');
-      fetchData(); // Recharger les données pour mettre à jour l'état des attachements
+      fetchData();
     } catch (error: any) {
       console.error('Error uploading file:', error);
-      setUploadError(prev => ({...prev, [titleId]: error.message || 'Erro ao anexar arquivo'})); // Utiliser prev
+      setUploadError(prev => ({...prev, [titleId]: error.message || 'Erro ao anexar arquivo'}));
       toast.error('Erro ao anexar arquivo');
     } finally {
       setUploadingFile(null);
       setTimeout(() => {
-        setUploadProgress(prev => ({...prev, [titleId]: 0})); // Utiliser prev
+        setUploadProgress(prev => ({...prev, [titleId]: 0}));
       }, 1000);
     }
   };
@@ -759,7 +748,7 @@ export const EvaluationTitlesPage: React.FC = () => {
     try {
       const { data, error } = await supabase.storage
         .from('evaluation-attachments')
-        .createSignedUrl(attachment.file_path, 3600); // URL valide 1 heure
+        .createSignedUrl(attachment.file_path, 3600);
 
       if (error) {
         console.error('Error creating signed URL:', error);
@@ -809,7 +798,6 @@ export const EvaluationTitlesPage: React.FC = () => {
 
   const handleDeleteTitle = async () => {
     try {
-      // First delete all attachments and their files
       const title = titles.find(t => t.id === confirmDialog.titleId);
       if (title?.attachments) {
         for (const attachment of title.attachments) {
@@ -819,7 +807,6 @@ export const EvaluationTitlesPage: React.FC = () => {
         }
       }
 
-      // Delete the title (attachments will be deleted by cascade if FK is set up)
       const { error } = await supabase
         .from('evaluation_titles')
         .delete()
@@ -901,7 +888,7 @@ export const EvaluationTitlesPage: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Títulos da Avaliação</h1>
           <p className="mt-1 text-gray-500">
             Gerencie os títulos das avaliações, associe turmas e anexe documentos PDF
-            {!isProFeatureEnabled && ( // Utilisation de isProFeatureEnabled
+            {!isProFeatureEnabled && (
               <span className="block text-blue-600 text-sm mt-1">
                 💡 Upgrade para o Plano Pro para anexar PDFs às avaliações
               </span>
@@ -918,8 +905,7 @@ export const EvaluationTitlesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ✅ CORRECTION: Banner informatif pour les utilisateurs Free */}
-      {!isProFeatureEnabled && ( // Utilisation de isProFeatureEnabled
+      {!isProFeatureEnabled && (
         <Card className="bg-blue-50 border-blue-200">
           <div className="p-4">
             <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
@@ -1052,7 +1038,7 @@ export const EvaluationTitlesPage: React.FC = () => {
                 <EvaluationTitleItem
                   title={title}
                   classes={classes}
-                  user={user} // Passe l'objet user au sous-composant
+                  user={user}
                   uploadingFile={uploadingFile}
                   uploadProgress={uploadProgress}
                   uploadError={uploadError}
@@ -1076,7 +1062,7 @@ export const EvaluationTitlesPage: React.FC = () => {
         message={
           confirmDialog.isAttachment
             ? "Tem certeza que deseja excluir este anexo? Esta ação não pode ser desfeita."
-            : `Tem certeza que deseja excluir o título "${confirmDialog.titleName}"? Todos os anexos associés également seront exclus.`
+            : `Tem certeza que deseja excluir o título "${confirmDialog.titleName}"? Todos os anexos associados également seront exclus.`
         }
         onConfirm={confirmDialog.isAttachment ? handleDeleteAttachment : handleDeleteTitle}
         onCancel={() => setConfirmDialog({ isOpen: false, titleId: '', titleName: '', attachmentId: '', isAttachment: false })}
