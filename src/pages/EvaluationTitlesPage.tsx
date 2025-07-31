@@ -141,10 +141,8 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
     }
   };
 
-  // ⛔️ SUPPRIMÉ: La fonction handleFileUploadClick a été supprimée car elle était la source du bug.
-  // Elle créait un input de manière programmatique au lieu d'utiliser l'input déjà présent.
-
-  // ✅ CORRIGÉ: Nouvelle fonction pour gérer la sélection de fichier à partir de l'événement onChange de l'input.
+  // ✅ CORRIGÉ: La fonction handleFileUploadClick a été supprimée.
+  // ✅ CORRIGÉ: Nouvelle fonction pour gérer correctement la sélection de fichier.
   const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!isProFeatureEnabled) {
       toast.error('Funcionalidade exclusiva para usuários do plano Pro');
@@ -153,7 +151,7 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
     
     if (!selectedClassId) {
       toast.error('Selecione uma turma antes de anexar o arquivo');
-      event.target.value = ''; // Réinitialise l'input pour éviter les problèmes
+      event.target.value = ''; 
       return;
     }
 
@@ -162,7 +160,6 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
       onFileUpload(title.id, file, selectedClassId);
     }
 
-    // Réinitialise la valeur de l'input pour permettre de re-télécharger le même fichier si nécessaire.
     event.target.value = '';
   };
 
@@ -303,8 +300,9 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
               Anexar PDF {!isProFeatureEnabled && <span className="text-orange-600">(Pro)</span>}
             </label>
             {isProFeatureEnabled ? (
+              // ✅ CORRIGÉ: Ajout de la classe "relative" pour contenir l'input de fichier.
               <label className={`
-                flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium 
+                relative flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium 
                 border border-gray-300 rounded-md shadow-sm cursor-pointer transition-colors
                 ${uploadingFile === title.id || !selectedClassId
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
