@@ -7,7 +7,7 @@ import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext'; // Importation de useAuth
+import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { formatDateShort } from '../lib/utils';
 
@@ -141,10 +141,11 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
     }
   };
 
-  const handleFileUploadClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+  // ⛔️ SUPPRIMÉ: La fonction handleFileUploadClick a été supprimée car elle était la source du bug.
+  // Elle créait un input de manière programmatique au lieu d'utiliser l'input déjà présent.
+
+  // ✅ CORRIGÉ: Nouvelle fonction pour gérer la sélection de fichier à partir de l'événement onChange de l'input.
+  const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!isProFeatureEnabled) {
       toast.error('Funcionalidade exclusiva para usuários do plano Pro');
       return;
@@ -152,35 +153,22 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
     
     if (!selectedClassId) {
       toast.error('Selecione uma turma antes de anexar o arquivo');
+      event.target.value = ''; // Réinitialise l'input pour éviter les problèmes
       return;
     }
-    
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.pdf';
-    fileInput.style.display = 'none';
-    
-    fileInput.onchange = (event: any) => {
-      const file = event.target?.files?.[0];
-      if (file) {
-        onFileUpload(title.id, file, selectedClassId);
-      }
-      document.body.removeChild(fileInput);
-    };
-    
-    document.body.appendChild(fileInput);
-    fileInput.click();
-  };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && selectedClassId) {
+    const file = event.target.files?.[0];
+    if (file) {
       onFileUpload(title.id, file, selectedClassId);
     }
+
+    // Réinitialise la valeur de l'input pour permettre de re-télécharger le même fichier si nécessaire.
+    event.target.value = '';
   };
 
+
   return (
-    <div className="p-4 sm:p-6 bg-white hover:bg-gray-50 transition-colors rounded-lg border border-gray-200 group" onClick={e => e.stopPropagation()}>
+    <div className="p-4 sm:p-6 bg-white hover:bg-gray-50 transition-colors rounded-lg border border-gray-200 group">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
         <div className="flex-1 mb-4 sm:mb-0">
           <div className="flex items-center space-x-2 mb-2">
@@ -322,15 +310,16 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                   : 'bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
                 }
-              `} onClick={handleFileUploadClick}>
+              `}>
                 <Upload className="mr-2 h-4 w-4" />
                 <span>
                   {uploadingFile === title.id ? 'Enviando...' : 'Selecionar PDF'}
                 </span>
+                {/* ✅ CORRIGÉ: Le onChange appelle maintenant handleFileSelected */}
                 <input
                   type="file"
                   accept=".pdf"
-                  onChange={handleFileChange}
+                  onChange={handleFileSelected}
                   disabled={uploadingFile === title.id || !selectedClassId}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                 />
@@ -380,14 +369,14 @@ const EvaluationTitleItem: React.FC<EvaluationTitleItemProps> = ({
         )}
         
         {uploadError[title.id] && (
-          <div className="mt-2 text-error-600 text-sm flex items-center">
+          <div className="mt-2 text-red-600 text-sm flex items-center">
             <AlertTriangle className="h-4 w-4 mr-1" />
             {uploadError[title.id]}
           </div>
         )}
         
         {uploadingFile === title.id && uploadProgress[title.id] === 100 && (
-          <div className="mt-2 text-success-600 text-sm flex items-center">
+          <div className="mt-2 text-green-600 text-sm flex items-center">
             <CheckCircle className="h-4 w-4 mr-1" />
             Arquivo enviado com sucesso!
           </div>
@@ -479,10 +468,14 @@ export const EvaluationTitlesPage: React.FC = () => {
   const isProFeatureEnabled = user?.isProOrTrial;
 
   useEffect(() => {
-    fetchData();
+    if (user?.id) {
+        fetchData();
+    }
   }, [user, sortOrder]);
 
   const fetchData = async () => {
+    if (!user?.id) return;
+
     try {
       setLoading(true);
       
@@ -496,12 +489,10 @@ export const EvaluationTitlesPage: React.FC = () => {
             class:classes(name)
           )
         `)
-        .eq('teacher_id', user?.id)
+        .eq('teacher_id', user.id)
         .order('created_at', { ascending: sortOrder === 'asc' });
 
       if (titlesError) throw titlesError;
-
-      console.log('📊 Títulos carregados:', titlesData?.length || 0);
 
       const processedTitles = (titlesData || []).map(title => ({
         ...title,
@@ -514,7 +505,7 @@ export const EvaluationTitlesPage: React.FC = () => {
       const { data: classesData, error: classesError } = await supabase
         .from('classes')
         .select('*')
-        .eq('teacher_id', user?.id)
+        .eq('teacher_id', user.id)
         .order('name');
 
       if (classesError) throw classesError;
@@ -522,10 +513,6 @@ export const EvaluationTitlesPage: React.FC = () => {
       setTitles(processedTitles);
       setClasses(classesData || []);
       
-      console.log('✅ Dados carregados:', {
-        titles: processedTitles.length,
-        classes: classesData?.length || 0
-      });
     } catch (error) {
       console.error('❌ Error fetching data:', error);
       toast.error('Erro ao carregar dados');
@@ -553,8 +540,6 @@ export const EvaluationTitlesPage: React.FC = () => {
         title: newTitleName.trim(),
         teacher_id: user.id,
         class_id: selectedClassForNewTitle || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
       };
 
       const { data: insertedData, error } = await supabase
@@ -567,13 +552,10 @@ export const EvaluationTitlesPage: React.FC = () => {
         console.error('Insert error:', error);
         if (error.code === '23505') {
           toast.error('Já existe um título com este nome');
+          setCreatingTitle(false);
           return;
         }
         throw error;
-      }
-
-      if (!insertedData) {
-        throw new Error('Nenhum dado retornado após inserção');
       }
 
       toast.success('Título criado com sucesso!');
@@ -581,7 +563,15 @@ export const EvaluationTitlesPage: React.FC = () => {
       setSelectedClassForNewTitle('');
       setShowCreateForm(false);
       
-      await fetchData();
+      const newTitleWithClass = {
+        ...insertedData,
+        class_name: classes.find(c => c.id === insertedData.class_id)?.name || null,
+        has_attachment: false,
+        attachments: [],
+        is_new: true
+      };
+
+      setTitles(prev => sortOrder === 'asc' ? [...prev, newTitleWithClass] : [newTitleWithClass, ...prev]);
       
       setTimeout(() => {
         setTitles(prev => prev.map(title => 
@@ -598,6 +588,7 @@ export const EvaluationTitlesPage: React.FC = () => {
   };
 
   const handleTitleUpdate = async (titleId: string, newTitle: string) => {
+    if (!user?.id) return;
     try {
       const { error } = await supabase
         .from('evaluation_titles')
@@ -606,7 +597,7 @@ export const EvaluationTitlesPage: React.FC = () => {
           updated_at: new Date().toISOString()
         })
         .eq('id', titleId)
-        .eq('teacher_id', user?.id);
+        .eq('teacher_id', user.id);
 
       if (error) throw error;
 
@@ -620,6 +611,7 @@ export const EvaluationTitlesPage: React.FC = () => {
   };
 
   const handleClassUpdate = async (titleId: string, classId: string) => {
+    if (!user?.id) return;
     try {
       const { error } = await supabase
         .from('evaluation_titles')
@@ -628,11 +620,14 @@ export const EvaluationTitlesPage: React.FC = () => {
           updated_at: new Date().toISOString()
         })
         .eq('id', titleId)
-        .eq('teacher_id', user?.id);
+        .eq('teacher_id', user.id);
 
       if (error) throw error;
 
-      await fetchData();
+      const className = classes.find(c => c.id === classId)?.name || null;
+      setTitles(prev => prev.map(title => 
+        title.id === titleId ? { ...title, class_id: classId || undefined, class_name: className } : title
+      ));
     } catch (error) {
       console.error('Error updating class:', error);
       throw error;
@@ -665,38 +660,30 @@ export const EvaluationTitlesPage: React.FC = () => {
       return;
     }
 
+    setUploadingFile(titleId);
+    setUploadProgress(prev => ({...prev, [titleId]: 0}));
+    setUploadError(prev => ({...prev, [titleId]: ''}));
+
     try {
-      setUploadingFile(titleId);
-      setUploadProgress(prev => ({...prev, [titleId]: 0}));
-      setUploadError(prev => ({...prev, [titleId]: ''}));
-
-      const { data: existingAttachment, error: checkError } = await supabase
-        .from('evaluation_attachments')
-        .select('*')
-        .eq('evaluation_title_id', titleId)
-        .eq('class_id', classId)
-        .eq('teacher_id', user?.id)
-        .maybeSingle();
-
-      if (checkError && checkError.code !== 'PGRST116') throw checkError;
+      const titleObj = titles.find(t => t.id === titleId);
+      const existingAttachment = titleObj?.attachments?.find(a => a.class_id === classId);
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const titleObj = titles.find(t => t.id === titleId);
       const titleName = titleObj?.title || 'document';
       const sanitizedTitle = titleName.replace(/[^a-zA-Z0-9]/g, '_');
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${titleId}/${sanitizedTitle}_${timestamp}.${fileExt}`;
 
       if (existingAttachment) {
-        const oldFilePath = existingAttachment.file_path;
         await supabase.storage
           .from('evaluation-attachments')
-          .remove([oldFilePath]);
+          .remove([existingAttachment.file_path]);
       }
 
       const { error: storageUploadError } = await supabase.storage
         .from('evaluation-attachments')
         .upload(fileName, file, {
+          upsert: false,
           onUploadProgress: (progress) => {
             const percent = Math.round((progress.loaded / progress.total) * 100);
             setUploadProgress(prev => ({...prev, [titleId]: percent}));
@@ -705,33 +692,34 @@ export const EvaluationTitlesPage: React.FC = () => {
 
       if (storageUploadError) throw storageUploadError;
 
+      const attachmentData = {
+        evaluation_title_id: titleId,
+        teacher_id: user.id,
+        class_id: classId,
+        file_path: fileName,
+        updated_at: new Date().toISOString()
+      };
+
       if (existingAttachment) {
-        const { error: updateError } = await supabase
+        const { data: updatedData, error: updateError } = await supabase
           .from('evaluation_attachments')
-          .update({
-            file_path: fileName,
-            teacher_id: user?.id,
-            class_id: classId,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingAttachment.id);
-
+          .update(attachmentData)
+          .eq('id', existingAttachment.id)
+          .select('*, class:classes(name)')
+          .single();
         if (updateError) throw updateError;
+        await fetchData(); // Refresh to be safe
       } else {
-        const { error: insertError } = await supabase
+        const { data: insertedData, error: insertError } = await supabase
           .from('evaluation_attachments')
-          .insert({
-            evaluation_title_id: titleId,
-            teacher_id: user?.id,
-            class_id: classId,
-            file_path: fileName
-          });
-
+          .insert(attachmentData)
+          .select('*, class:classes(name)')
+          .single();
         if (insertError) throw insertError;
+        await fetchData(); // Refresh to be safe
       }
 
       toast.success('Arquivo anexado com sucesso!');
-      fetchData();
     } catch (error: any) {
       console.error('Error uploading file:', error);
       setUploadError(prev => ({...prev, [titleId]: error.message || 'Erro ao anexar arquivo'}));
@@ -740,7 +728,7 @@ export const EvaluationTitlesPage: React.FC = () => {
       setUploadingFile(null);
       setTimeout(() => {
         setUploadProgress(prev => ({...prev, [titleId]: 0}));
-      }, 1000);
+      }, 2000);
     }
   };
 
@@ -748,22 +736,13 @@ export const EvaluationTitlesPage: React.FC = () => {
     try {
       const { data, error } = await supabase.storage
         .from('evaluation-attachments')
-        .createSignedUrl(attachment.file_path, 3600);
+        .createSignedUrl(attachment.file_path, 3600); 
 
-      if (error) {
-        console.error('Error creating signed URL:', error);
-        toast.error('Erro ao gerar link de visualização');
-        return;
-      }
-
-      if (data?.signedUrl) {
-        window.open(data.signedUrl, '_blank');
-      } else {
-        toast.error('Não foi possível gerar o link para visualização');
-      }
+      if (error) throw error;
+      window.open(data.signedUrl, '_blank');
     } catch (error) {
-      console.error('Error viewing PDF:', error);
-      toast.error('Erro ao visualizar PDF');
+      console.error('Error creating signed URL:', error);
+      toast.error('Erro ao gerar link de visualização');
     }
   };
 
@@ -777,18 +756,16 @@ export const EvaluationTitlesPage: React.FC = () => {
 
       if (error) throw error;
 
-      if (data) {
-        const url = URL.createObjectURL(data);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = attachment.file_path.split('/').pop() || 'documento.pdf';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        toast.dismiss();
-        toast.success('Download concluído');
-      }
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = attachment.file_path.split('/').pop() || 'documento.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.dismiss();
+      toast.success('Download concluído');
     } catch (error) {
       console.error('Error downloading PDF:', error);
       toast.dismiss();
@@ -797,25 +774,26 @@ export const EvaluationTitlesPage: React.FC = () => {
   };
 
   const handleDeleteTitle = async () => {
+    if (!user?.id) return;
     try {
       const title = titles.find(t => t.id === confirmDialog.titleId);
-      if (title?.attachments) {
-        for (const attachment of title.attachments) {
-          await supabase.storage
+      if (title?.attachments && title.attachments.length > 0) {
+        const filesToRemove = title.attachments.map(a => a.file_path);
+        await supabase.storage
             .from('evaluation-attachments')
-            .remove([attachment.file_path]);
-        }
+            .remove(filesToRemove);
       }
 
       const { error } = await supabase
         .from('evaluation_titles')
         .delete()
-        .eq('id', confirmDialog.titleId);
+        .eq('id', confirmDialog.titleId)
+        .eq('teacher_id', user.id);
 
       if (error) throw error;
 
+      setTitles(prev => prev.filter(t => t.id !== confirmDialog.titleId));
       toast.success('Título excluído com sucesso');
-      fetchData();
     } catch (error) {
       console.error('Error deleting title:', error);
       toast.error('Erro ao excluir título');
@@ -825,6 +803,7 @@ export const EvaluationTitlesPage: React.FC = () => {
   };
 
   const handleDeleteAttachment = async () => {
+    if (!user?.id) return;
     try {
       const attachment = titles
         .flatMap(t => t.attachments || [])
@@ -838,13 +817,14 @@ export const EvaluationTitlesPage: React.FC = () => {
         const { error } = await supabase
           .from('evaluation_attachments')
           .delete()
-          .eq('id', confirmDialog.attachmentId);
+          .eq('id', confirmDialog.attachmentId)
+          .eq('teacher_id', user.id);
 
         if (error) throw error;
+        
+        await fetchData(); // Refresh data to update UI
+        toast.success('Anexo excluído com sucesso');
       }
-
-      toast.success('Anexo excluído com sucesso');
-      fetchData();
     } catch (error) {
       console.error('Error deleting attachment:', error);
       toast.error('Erro ao excluir anexo');
@@ -1019,7 +999,7 @@ export const EvaluationTitlesPage: React.FC = () => {
         ) : filteredTitles.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-gray-500">
-              {titles.length === 0 ? 'Nenhum título encontrado' : 'Nenhum título corresponde à busca'}
+              {titles.length === 0 ? 'Nenhum título encontrado.' : 'Nenhum título corresponde à busca.'}
             </p>
             <Button
               variant="outline"
@@ -1062,7 +1042,7 @@ export const EvaluationTitlesPage: React.FC = () => {
         message={
           confirmDialog.isAttachment
             ? "Tem certeza que deseja excluir este anexo? Esta ação não pode ser desfeita."
-            : `Tem certeza que deseja excluir o título "${confirmDialog.titleName}"? Todos os anexos associados également seront exclus.`
+            : `Tem certeza que deseja excluir o título "${confirmDialog.titleName}"? Todos os anexos associados também serão excluídos.`
         }
         onConfirm={confirmDialog.isAttachment ? handleDeleteAttachment : handleDeleteTitle}
         onCancel={() => setConfirmDialog({ isOpen: false, titleId: '', titleName: '', attachmentId: '', isAttachment: false })}
