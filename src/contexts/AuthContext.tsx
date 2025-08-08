@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { User, AuthState } from '../types'; // Assurez-vous que User et AuthState sont importés de votre fichier types
+import { User, AuthState } from '../types';
 
 interface AuthContextType {
   user: User | null;
@@ -21,77 +21,142 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateUserState = async (session: any) => {
     console.log('🔄 [AuthContext] updateUserState - Session:', !!session);
-    
+
     if (session?.user) {
       try {
+        let userData;
+
         const { data, error } = await supabase
           .from('users')
-          .select('*') // Sélectionne toutes les colonnes de la table 'users'
+          .select('*')
           .eq('id', session.user.id)
           .single();
 
-        if (error) {
-          console.warn('⚠️ [AuthContext] Erreur récupération données utilisateur:', error.message);
-          
-          if (error.code === 'PGRST116') { // Code d'erreur pour "ligne non trouvée"
-            console.log('🆕 [AuthContext] Utilisateur non trouvé dans la table users, création et activation de l\'essai Pro...');
-            // MODIFICATION CLÉ ICI : Définir current_plan à 'pro_trial' pour les nouveaux utilisateurs
-            const { error: insertError } = await supabase
-              .from('users')
-              .insert({ 
-                id: session.user.id, 
-                email: session.user.email, 
-                role: 'teacher', 
-                current_plan: 'pro_trial' // <-- CORRIGÉ : Le plan par défaut pour un nouvel utilisateur est 'pro_trial'
-                // pro_trial_start_date et pro_trial_enabled devraient être gérés par les valeurs par défaut de la DB (now() et true)
-              });
-            if (insertError) throw insertError;
-          } else {
-              throw error;
-          }
+        if (!data) {
+          console.log('🆕 [AuthContext] Utilisateur non trouvé dans la table users, création et activation du plan Pro Trial...');
+          const { data: insertData, error: insertError } = await supabase
+            .from('users')
+            .insert({
+              id: session.user.id,
+              email: session.user.email,
+              role: 'teacher',
+              current_plan: 'pro_trial',
+            })
+            .select('*')
+            .single();
+          if (insertError) throw insertError;
+          userData = insertData;
+        } else {
+          userData = data;
         }
 
-        // Re-récupère les données si l'insertion vient d'avoir lieu (pour inclure le plan 'pro_trial' si c'est une nouvelle insertion)
-        const userData = data || (await supabase.from('users').select('*').eq('id', session.user.id).single()).data;
-        
-        // Calcul de la propriété isProOrTrial
-        let isProOrTrial = false;
-        const trialDurationDays = 15; // Durée de l'essai gratuit en jours
+        const trialDurationDays = 15;
 
-        // La logique pour déterminer si l'utilisateur est sur un plan Pro ou en essai Pro
-        // L'utilisateur est Pro si :
-        // 1. Son abonnement Pro est actif (pro_subscription_active est TRUE)
-        // OU
-        // 2. Son plan est explicitement 'pro' (abonné payant)
-        // OU
-        // 3. Son plan est 'pro_trial' ET l'essai est activé (pro_trial_enabled) ET la date de début est dans la période valide
-        if (userData.pro_subscription_active || userData.current_plan === 'pro') {
-          isProOrTrial = true;
-        } else if (userData.current_plan === 'pro_trial' && userData.pro_trial_enabled && userData.pro_trial_start_date) {
+        // ✅ Mise à jour vers pro_trial si éligible
+        if (
+          userData.pro_trial_enabled &&
+          userData.current_plan === 'free' &&
+          userData.pro_trial_start_date
+        ) {
           const trialStartDate = new Date(userData.pro_trial_start_date);
           const now = new Date();
           const diffTime = Math.abs(now.getTime() - trialStartDate.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // Différence en jours
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
           if (diffDays <= trialDurationDays) {
-            isProOrTrial = true; // L'essai est toujours valide
+            console.log(
+              '⬆️ [AuthContext] Utilisateur éligible à l\'essai Pro. Mise à jour vers pro_trial...'
+            );
+            const { error: updateError } = await supabase
+              .from('users')
+              .update({ current_plan: 'pro_trial' })
+              .eq('id', session.user.id);
+            if (updateError) {
+              console.error(
+                '❌ [AuthContext] Erreur mise à jour pro_trial:',
+                updateError.message
+              );
+            } else {
+              userData.current_plan = 'pro_trial';
+              console.log('✅ [AuthContext] Plan mis à jour vers pro_trial.');
+            }
+          } else {
+            console.log('⏳ [AuthContext] Essai Pro expiré (utilisateur en plan free).');
           }
         }
 
-        const newUser: User = { // Assurez-vous que 'User' est l'interface que vous avez mise à jour
+        // 🔻 Rétrogradation si essai expiré
+        else if (
+          userData.current_plan === 'pro_trial' &&
+          userData.pro_trial_enabled &&
+          userData.pro_trial_start_date
+        ) {
+          const trialStartDate = new Date(userData.pro_trial_start_date);
+          const now = new Date();
+          const diffTime = Math.abs(now.getTime() - trialStartDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          if (diffDays > trialDurationDays) {
+            console.log('⬇️ [AuthContext] Essai expiré. Rétrogradation vers free...');
+            const { error: downgradeError } = await supabase
+              .from('users')
+              .update({ current_plan: 'free' })
+              .eq('id', session.user.id);
+            if (downgradeError) {
+              console.error(
+                '❌ [AuthContext] Erreur rétrogradation plan expiré:',
+                downgradeError.message
+              );
+            } else {
+              userData.current_plan = 'free';
+              console.log('✅ [AuthContext] Plan rétrogradé vers free.');
+            }
+          }
+        }
+
+        // ✅ Calcul du flag isProOrTrial
+        let isProOrTrial = false;
+
+        if (
+          userData.pro_subscription_active ||
+          userData.current_plan === 'pro'
+        ) {
+          isProOrTrial = true;
+        } else if (
+          userData.current_plan === 'pro_trial' &&
+          userData.pro_trial_enabled &&
+          userData.pro_trial_start_date
+        ) {
+          const trialStartDate = new Date(userData.pro_trial_start_date);
+          const now = new Date();
+          const diffTime = Math.abs(now.getTime() - trialStartDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          if (diffDays <= trialDurationDays) {
+            isProOrTrial = true;
+          }
+        }
+
+        const newUser: User = {
           ...session.user,
           role: userData.role,
-          subscription_plan: userData.current_plan, // Conserver pour la cohérence
+          subscription_plan: userData.current_plan,
           full_name: userData.full_name,
           pro_subscription_active: userData.pro_subscription_active,
           subscription_expires_at: userData.subscription_expires_at,
-          current_plan: userData.current_plan, // Conserver pour la cohérence
-          pro_trial_start_date: userData.pro_trial_start_date, // Ajouter la date de début de l'essai
-          pro_trial_enabled: userData.pro_trial_enabled,       // Ajouter le flag d'essai
-          isProOrTrial: isProOrTrial,                           // Ajouter la propriété calculée
+          current_plan: userData.current_plan,
+          pro_trial_start_date: userData.pro_trial_start_date,
+          pro_trial_enabled: userData.pro_trial_enabled,
+          isProOrTrial,
         };
-        
-        console.log('✅ [AuthContext] Utilisateur mis à jour:', newUser.email, 'Plan Pro/Trial:', newUser.isProOrTrial, 'Current Plan DB:', newUser.current_plan);
+
+        console.log(
+          '✅ [AuthContext] Utilisateur mis à jour:',
+          newUser.email,
+          'Plan Pro/Trial:',
+          newUser.isProOrTrial,
+          'Current Plan DB:',
+          newUser.current_plan
+        );
         setState({ session, user: newUser, loading: false });
       } catch (error) {
         console.error('❌ [AuthContext] Exception mise à jour utilisateur:', error);
@@ -108,30 +173,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       await updateUserState(session);
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log('🔔 [AuthContext] AuthStateChange:', { event, hasSession: !!session });
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          console.log('🔔 [AuthContext] AuthStateChange:', { event, hasSession: !!session });
 
-        // Ne pas rediriger si l'événement est PASSWORD_RECOVERY
-        if (event === 'PASSWORD_RECOVERY') {
-          console.log('🔄 [AuthContext] Événement de récupération de mot de passe détecté. Aucune redirection.');
-          await updateUserState(session);
-          return;
-        }
+          if (event === 'PASSWORD_RECOVERY') {
+            console.log('🔄 [AuthContext] Événement PASSWORD_RECOVERY, pas de redirection.');
+            await updateUserState(session);
+            return;
+          }
 
-        if (event === 'SIGNED_IN') {
-          await updateUserState(session);
-          if (session && window.location.pathname === '/login') {
-            window.location.replace('/dashboard');
+          if (event === 'SIGNED_IN') {
+            await updateUserState(session);
+            if (session && window.location.pathname === '/login') {
+              window.location.replace('/dashboard');
+            }
+          }
+
+          if (event === 'SIGNED_OUT') {
+            setState({ session: null, user: null, loading: false });
+            if (window.location.pathname !== '/login') {
+              window.location.replace('/login');
+            }
           }
         }
-
-        if (event === 'SIGNED_OUT') {
-          setState({ session: null, user: null, loading: false });
-          if (window.location.pathname !== '/login') {
-            window.location.replace('/login');
-          }
-        }
-      });
+      );
 
       return () => {
         subscription?.unsubscribe();
@@ -145,7 +211,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error || null };
   };
-  
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setState({ session: null, user: null, loading: false });
