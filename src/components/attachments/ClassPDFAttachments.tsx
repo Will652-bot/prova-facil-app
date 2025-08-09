@@ -113,25 +113,38 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
 
       if (storageError) throw storageError;
 
-      // Upsert record in database
-      const { data: upsertData, error: dbError } = await supabase
-        .from('evaluation_attachments')
-        .upsert({
-          class_id: classId,
-          teacher_id: user.id,
-          file_path: filePath
-        }, { 
-          onConflict: 'class_id,teacher_id',
-          ignoreDuplicates: false 
-        })
-        .select()
-        .single();
+      // ✅ CORRECTION DE LA LOGIQUE DE LA BASE DE DONNÉES
+      const newAttachmentData = {
+        class_id: classId,
+        teacher_id: user.id,
+        file_path: filePath
+      };
 
-      if (dbError) throw dbError;
+      if (attachment?.id) {
+        // Update existing record if it already exists
+        const { data: updateData, error: dbError } = await supabase
+          .from('evaluation_attachments')
+          .update(newAttachmentData)
+          .eq('id', attachment.id)
+          .select()
+          .single();
 
-      setAttachment(upsertData);
+        if (dbError) throw dbError;
+        setAttachment(updateData);
+      } else {
+        // Insert new record if it does not exist
+        const { data: insertData, error: dbError } = await supabase
+          .from('evaluation_attachments')
+          .insert(newAttachmentData)
+          .select()
+          .single();
+
+        if (dbError) throw dbError;
+        setAttachment(insertData);
+      }
+
       toast.success('Arquivo anexado com sucesso');
-      
+        
       // Reset file input
       event.target.value = '';
     } catch (error: any) {
