@@ -27,7 +27,7 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // ✅ CORRECTION: Détection correcte du plan Pro
+  // ✅ Détection du plan Pro
   const isPro = user?.current_plan === 'pro' || user?.pro_subscription_active === true;
 
   useEffect(() => {
@@ -56,7 +56,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    // ✅ CORRECTION: Vérification du plan Pro
     if (!isPro) {
       toast.error('Funcionalidade exclusiva para usuários do plano Pro');
       return;
@@ -65,13 +64,11 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.includes('pdf')) {
       toast.error('Apenas arquivos PDF são permitidos');
       return;
     }
 
-    // Validate file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
       toast.error('O arquivo deve ter no máximo 10MB');
       return;
@@ -86,20 +83,17 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
       setUploading(true);
       setUploadProgress(0);
 
-      // Generate filename with timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const sanitizedClassName = className.replace(/[^a-zA-Z0-9]/g, '_');
       const filename = `${sanitizedClassName}_${timestamp}.pdf`;
       const filePath = `${classId}/${filename}`;
 
-      // If attachment exists, delete the old file first
       if (attachment) {
         await supabase.storage
           .from('evaluation-attachments')
           .remove([attachment.file_path]);
       }
 
-      // Upload new file to storage
       const { error: storageError } = await supabase.storage
         .from('evaluation-attachments')
         .upload(filePath, file, {
@@ -113,7 +107,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
 
       if (storageError) throw storageError;
 
-      // ✅ CORRECTION DE LA LOGIQUE DE LA BASE DE DONNÉES
       const newAttachmentData = {
         class_id: classId,
         teacher_id: user.id,
@@ -121,7 +114,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
       };
 
       if (attachment?.id) {
-        // Update existing record if it already exists
         const { data: updateData, error: dbError } = await supabase
           .from('evaluation_attachments')
           .update(newAttachmentData)
@@ -132,7 +124,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
         if (dbError) throw dbError;
         setAttachment(updateData);
       } else {
-        // Insert new record if it does not exist
         const { data: insertData, error: dbError } = await supabase
           .from('evaluation_attachments')
           .insert(newAttachmentData)
@@ -145,7 +136,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
 
       toast.success('Arquivo anexado com sucesso');
         
-      // Reset file input
       event.target.value = '';
     } catch (error: any) {
       console.error('Error uploading file:', error);
@@ -160,7 +150,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
     if (!attachment) return;
 
     try {
-      // Generate signed URL with 60 seconds expiration
       const { data, error } = await supabase.storage
         .from('evaluation-attachments')
         .createSignedUrl(attachment.file_path, 60);
@@ -168,7 +157,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
       if (error) throw error;
 
       if (data?.signedUrl) {
-        // Open in new tab for preview
         window.open(data.signedUrl, '_blank');
       } else {
         toast.error('Não foi possível gerar o link para visualização');
@@ -191,14 +179,12 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
     try {
       setLoading(true);
 
-      // Delete from storage
       const { error: storageError } = await supabase.storage
         .from('evaluation-attachments')
         .remove([attachment.file_path]);
 
       if (storageError) throw storageError;
 
-      // Delete from database
       const { error: dbError } = await supabase
         .from('evaluation_attachments')
         .delete()
@@ -250,8 +236,8 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
           {isPro ? (
             <label className={`
               flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium 
-              border border-gray-300 rounded-md shadow-sm cursor-pointer transition-colors
-              ${uploading 
+              border border-gray-300 rounded-md shadow-sm transition-colors
+              ${uploading || loading // AJOUT: On désactive le bouton pendant le chargement initial
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                 : 'bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
               }
@@ -264,7 +250,7 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
                 type="file"
                 accept=".pdf"
                 onChange={handleFileUpload}
-                disabled={uploading}
+                disabled={uploading || loading} // AJOUT: On désactive le bouton pendant le chargement initial
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
               />
             </label>
