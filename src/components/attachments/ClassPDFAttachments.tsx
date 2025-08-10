@@ -170,8 +170,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
   const handleDeleteFile = async () => {
     if (!attachment) return;
 
-    // Utilisation d'un dialogue modal asynchrone pour une meilleure expérience utilisateur
-    // et pour éviter le blocage du thread principal.
     const confirmed = window.confirm(
       'Tem certeza que deseja remover este anexo? Esta ação não pode ser desfeita.'
     );
