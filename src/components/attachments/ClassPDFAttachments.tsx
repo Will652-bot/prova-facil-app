@@ -181,20 +181,16 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
     try {
       setLoading(true);
 
-      // Définir une variable pour suivre le succès de la suppression dans le stockage
-      let storageDeletionSuccessful = false;
-
-      // Logique de suppression du fichier
+      // Force une requête unique pour contourner le cache du navigateur
+      const timestamp = new Date().getTime();
       const { error: storageError } = await supabase.storage
         .from('evaluation-attachments')
-        .remove([attachment.file_path]);
+        .remove([`${attachment.file_path}?v=${timestamp}`]);
 
       if (storageError) {
         throw storageError;
       }
-      storageDeletionSuccessful = true;
 
-      // Logique de suppression de la ligne dans la base de données
       const { error: dbError } = await supabase
         .from('evaluation_attachments')
         .delete()
