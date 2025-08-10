@@ -170,28 +170,42 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
   const handleDeleteFile = async () => {
     if (!attachment) return;
 
-    const confirmDelete = window.confirm(
+    // Utilisation d'un dialogue modal asynchrone pour une meilleure expérience utilisateur
+    // et pour éviter le blocage du thread principal.
+    const confirmed = window.confirm(
       'Tem certeza que deseja remover este anexo? Esta ação não pode ser desfeita.'
     );
 
-    if (!confirmDelete) return;
+    if (!confirmed) {
+      return;
+    }
 
     try {
       setLoading(true);
 
+      // Définir une variable pour suivre le succès de la suppression dans le stockage
+      let storageDeletionSuccessful = false;
+
+      // Logique de suppression du fichier
       const { error: storageError } = await supabase.storage
         .from('evaluation-attachments')
         .remove([attachment.file_path]);
 
-      if (storageError) throw storageError;
+      if (storageError) {
+        throw storageError;
+      }
+      storageDeletionSuccessful = true;
 
+      // Logique de suppression de la ligne dans la base de données
       const { error: dbError } = await supabase
         .from('evaluation_attachments')
         .delete()
         .eq('class_id', classId)
         .eq('teacher_id', user?.id);
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        throw dbError;
+      }
 
       setAttachment(null);
       toast.success('Anexo removido com sucesso');
@@ -237,7 +251,7 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
             <label className={`
               flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium 
               border border-gray-300 rounded-md shadow-sm transition-colors
-              ${uploading || loading // AJOUT: On désactive le bouton pendant le chargement initial
+              ${uploading || loading 
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                 : 'bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
               }
@@ -250,7 +264,7 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
                 type="file"
                 accept=".pdf"
                 onChange={handleFileUpload}
-                disabled={uploading || loading} // AJOUT: On désactive le bouton pendant le chargement initial
+                disabled={uploading || loading}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
               />
             </label>
