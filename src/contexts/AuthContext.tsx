@@ -41,7 +41,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           if (error && error.code !== 'PGRST116') throw error;
-
           return data;
         };
 
@@ -52,28 +51,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           let initialPlan = 'free';
           try {
-            // 1️⃣ Vérifier si l'utilisateur est dans prospects
+            // ✅ Vérification présence dans prospects pour pro_trial
             const { data: prospects, error: prospectsError } = await supabase
               .from('prospects')
               .select('email')
               .eq('email', session.user.email);
 
-            if (prospectsError) {
-              console.error('❌ Erreur lors de la vérification du prospect:', prospectsError);
-              throw prospectsError;
-            }
+            if (prospectsError) throw prospectsError;
 
             const isProspect = prospects && prospects.length > 0;
 
-            // 2️⃣ Compter le total de prospects
             const { count: totalProspects, error: countError } = await supabase
               .from('prospects')
               .select('*', { count: 'exact', head: true });
 
-            if (countError) {
-              console.error('❌ Erreur lors du comptage des prospects:', countError);
-              throw countError;
-            }
+            if (countError) throw countError;
 
             const isUnderLimit = totalProspects !== null && totalProspects <= 100;
 
@@ -99,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             })
             .select()
             .single();
+
           if (insertError) throw insertError;
           userData = insertData;
         } else {
@@ -124,14 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .from('users')
               .update({ current_plan: 'pro_trial' })
               .eq('id', session.user.id);
-            if (updateError) {
-              console.error('❌ [AuthContext] Erreur mise à jour pro_trial:', updateError.message);
-            } else {
-              userData.current_plan = 'pro_trial';
-              console.log('✅ [AuthContext] Plan mis à jour vers pro_trial.');
-            }
-          } else {
-            console.log('⏳ [AuthContext] Essai Pro expiré (utilisateur en plan free).');
+            if (!updateError) userData.current_plan = 'pro_trial';
           }
         }
 
@@ -152,18 +138,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .from('users')
               .update({ current_plan: 'free' })
               .eq('id', session.user.id);
-            if (downgradeError) {
-              console.error('❌ [AuthContext] Erreur rétrogradation plan expiré:', downgradeError.message);
-            } else {
-              userData.current_plan = 'free';
-              console.log('✅ [AuthContext] Plan rétrogradé vers free.');
-            }
+            if (!downgradeError) userData.current_plan = 'free';
           }
         }
 
         // ✅ Calcul du flag isProOrTrial
         let isProOrTrial = false;
-
         if (
           userData.pro_subscription_active ||
           userData.current_plan === 'pro'
@@ -178,9 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const now = new Date();
           const diffTime = Math.abs(now.getTime() - trialStartDate.getTime());
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          if (diffDays <= trialDurationDays) {
-            isProOrTrial = true;
-          }
+          if (diffDays <= trialDurationDays) isProOrTrial = true;
         }
 
         const newUser: User = {
@@ -196,21 +174,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           isProOrTrial,
         };
 
-        console.log(
-          '✅ [AuthContext] Utilisateur mis à jour:',
-          newUser.email,
-          'Plan Pro/Trial:',
-          newUser.isProOrTrial,
-          'Current Plan DB:',
-          newUser.current_plan
-        );
         setState({ session, user: newUser, loading: false });
       } catch (error) {
         console.error('❌ [AuthContext] Exception mise à jour utilisateur:', error);
         setState({ session: null, user: null, loading: false });
       }
     } else {
-      console.log('🧹 [AuthContext] Nettoyage état utilisateur');
       setState({ session: null, user: null, loading: false });
     }
   };
@@ -222,21 +191,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, session) => {
-          console.log('🔔 [AuthContext] AuthStateChange:', { event, hasSession: !!session });
-
           if (event === 'PASSWORD_RECOVERY') {
-            console.log('🔄 [AuthContext] Événement PASSWORD_RECOVERY, pas de redirection.');
             await updateUserState(session);
             return;
           }
-
           if (event === 'SIGNED_IN') {
             await updateUserState(session);
             if (session && window.location.pathname === '/login') {
               window.location.replace('/dashboard');
             }
           }
-
           if (event === 'SIGNED_OUT') {
             setState({ session: null, user: null, loading: false });
             if (window.location.pathname !== '/login') {
