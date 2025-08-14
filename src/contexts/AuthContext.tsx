@@ -52,27 +52,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           let initialPlan = 'free';
           try {
-            // ✅ CORRECTION : La logique de vérification et de comptage a été refactorisée.
-            const { data: prospects, count: totalProspects, error: prospectsError } = await supabase
+            // 1️⃣ Vérifier si l'utilisateur est dans prospects
+            const { data: prospects, error: prospectsError } = await supabase
               .from('prospects')
-              .select('email', { count: 'exact' })
+              .select('email')
               .eq('email', session.user.email);
-            
+
             if (prospectsError) {
               console.error('❌ Erreur lors de la vérification du prospect:', prospectsError);
-              initialPlan = 'free';
+              throw prospectsError;
+            }
+
+            const isProspect = prospects && prospects.length > 0;
+
+            // 2️⃣ Compter le total de prospects
+            const { count: totalProspects, error: countError } = await supabase
+              .from('prospects')
+              .select('*', { count: 'exact', head: true });
+
+            if (countError) {
+              console.error('❌ Erreur lors du comptage des prospects:', countError);
+              throw countError;
+            }
+
+            const isUnderLimit = totalProspects !== null && totalProspects <= 100;
+
+            if (isProspect && isUnderLimit) {
+              initialPlan = 'pro_trial';
+              console.log('✅ Plan "pro_trial" attribué (prospect + sous limite).');
             } else {
-              // Vérifier si l'utilisateur est un prospect ET si la limite des 100 n'est pas dépassée.
-              const isProspect = prospects && prospects.length > 0;
-              const isUnderLimit = totalProspects !== null && totalProspects <= 100;
-              
-              if (isProspect && isUnderLimit) {
-                initialPlan = 'pro_trial';
-                console.log('✅ Plan "pro_trial" attribué (e-mail prospect trouvé et limite non dépassée).');
-              } else {
-                initialPlan = 'free';
-                console.log('✅ Plan "free" attribué (limite dépassée ou e-mail non prospect).');
-              }
+              console.log('ℹ️ Plan "free" attribué (hors limite ou non prospect).');
             }
 
           } catch (err) {
@@ -110,18 +119,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
           if (diffDays <= trialDurationDays) {
-            console.log(
-              '⬆️ [AuthContext] Utilisateur éligible à l\'essai Pro. Mise à jour vers pro_trial...'
-            );
+            console.log('⬆️ [AuthContext] Utilisateur éligible à l\'essai Pro. Mise à jour vers pro_trial...');
             const { error: updateError } = await supabase
               .from('users')
               .update({ current_plan: 'pro_trial' })
               .eq('id', session.user.id);
             if (updateError) {
-              console.error(
-                '❌ [AuthContext] Erreur mise à jour pro_trial:',
-                updateError.message
-              );
+              console.error('❌ [AuthContext] Erreur mise à jour pro_trial:', updateError.message);
             } else {
               userData.current_plan = 'pro_trial';
               console.log('✅ [AuthContext] Plan mis à jour vers pro_trial.');
@@ -149,10 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .update({ current_plan: 'free' })
               .eq('id', session.user.id);
             if (downgradeError) {
-              console.error(
-                '❌ [AuthContext] Erreur rétrogradation plan expiré:',
-                downgradeError.message
-              );
+              console.error('❌ [AuthContext] Erreur rétrogradation plan expiré:', downgradeError.message);
             } else {
               userData.current_plan = 'free';
               console.log('✅ [AuthContext] Plan rétrogradé vers free.');
