@@ -52,30 +52,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           let initialPlan = 'free';
           try {
-            // ✅ CORRECTION : Vérification simple de l'existence de l'e-mail dans la table prospects.
-            // On ne se base plus sur le comptage total pour éviter les erreurs.
-            const { data: prospects, error: prospectError } = await supabase
+            // ✅ CORRECTION : La logique de vérification et de comptage a été refactorisée.
+            const { data: prospects, count: totalProspects, error: prospectsError } = await supabase
               .from('prospects')
-              .select('email')
-              .eq('email', session.user.email)
-              .maybeSingle(); // Utilisation de maybeSingle pour vérifier l'existence sans erreur si non trouvé.
-
-            if (prospectError) {
-              console.error('❌ Erreur lors de la vérification du prospect:', prospectError);
-              initialPlan = 'free'; // En cas d'erreur, plan gratuit par sécurité
-            } else if (prospects) {
-              // L'e-mail du prospect existe, le plan pro_trial est attribué
-              initialPlan = 'pro_trial';
-              console.log('✅ Plan "pro_trial" attribué (e-mail prospect trouvé).');
-            } else {
-              // L'e-mail n'existe pas dans la table prospects
+              .select('email', { count: 'exact' })
+              .eq('email', session.user.email);
+            
+            if (prospectsError) {
+              console.error('❌ Erreur lors de la vérification du prospect:', prospectsError);
               initialPlan = 'free';
-              console.log('✅ Plan "free" attribué (e-mail non prospect).');
+            } else {
+              // Vérifier si l'utilisateur est un prospect ET si la limite des 100 n'est pas dépassée.
+              const isProspect = prospects && prospects.length > 0;
+              const isUnderLimit = totalProspects !== null && totalProspects <= 100;
+              
+              if (isProspect && isUnderLimit) {
+                initialPlan = 'pro_trial';
+                console.log('✅ Plan "pro_trial" attribué (e-mail prospect trouvé et limite non dépassée).');
+              } else {
+                initialPlan = 'free';
+                console.log('✅ Plan "free" attribué (limite dépassée ou e-mail non prospect).');
+              }
             }
 
           } catch (err) {
             console.error('❌ Exception lors de la vérification du plan:', err);
-            initialPlan = 'free'; // Par sécurité
+            initialPlan = 'free';
           }
 
           const { data: insertData, error: insertError } = await supabase
