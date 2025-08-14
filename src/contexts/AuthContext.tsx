@@ -26,36 +26,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         let userData;
 
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
+        // ✅ CORRECTION : Implémentation de la logique d'Exponential Backoff
+        const fetchUserDataWithRetry = async (retryCount = 0): Promise<any> => {
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (error && error.code === '429' && retryCount < 5) { // Limiter à 5 tentatives
+            const delay = Math.pow(2, retryCount) * 100; // Délai exponentiel (100ms, 200ms, 400ms...)
+            console.warn(`⚠️ Erreur 429 détectée. Retraite de ${delay}ms... (Tentative ${retryCount + 1})`);
+            await new Promise(res => setTimeout(res, delay));
+            return fetchUserDataWithRetry(retryCount + 1);
+          }
+
+          if (error && error.code !== 'PGRST116') throw error; // PGRST116 = pas de lignes retournées
+
+          return data;
+        };
+
+        const data = await fetchUserDataWithRetry();
 
         if (!data) {
           console.log('🆕 [AuthContext] Utilisateur non trouvé dans la table users, vérification du plan...');
 
-          // ➡️ ✅ NOUVELLE LOGIQUE : Vérifier l'éligibilité au plan "pro_trial"
           let initialPlan = 'free';
           try {
-            // 1. Vérifier si l'e-mail existe dans la table prospects
             const { data: prospects, error: prospectError } = await supabase
               .from('prospects')
               .select('email')
               .eq('email', session.user.email);
 
-            // 2. Compter le nombre total d'inscriptions dans la table prospects
             const { count: totalProspects, error: countError } = await supabase
               .from('prospects')
               .select('*', { count: 'exact', head: true });
 
             if (prospectError || countError) {
               console.error('❌ Erreur lors de la vérification du plan:', prospectError || countError);
-              initialPlan = 'free'; // En cas d'erreur, attribuer le plan gratuit par sécurité
+              initialPlan = 'free';
             } else {
-              // 3. Condition pour l'éligibilité au plan "pro_trial"
-              // ✅ CORRECTION : La logique a été ajustée pour prendre en compte le cas où l'email n'est pas un prospect.
-              if (prospects && prospects.length > 0 && totalProspects <= 100) {
+              if (prospects && prospects.length > 0 && totalProspects !== null && totalProspects <= 100) {
                 initialPlan = 'pro_trial';
                 console.log('✅ Plan "pro_trial" attribué (limite non dépassée).');
               } else {
@@ -65,9 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           } catch (err) {
             console.error('❌ Exception lors de la vérification du plan:', err);
-            initialPlan = 'free'; // Par sécurité
+            initialPlan = 'free';
           }
-          // ➡️ ✅ FIN DE LA NOUVELLE LOGIQUE
 
           const { data: insertData, error: insertError } = await supabase
             .from('users')
@@ -75,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               id: session.user.id,
               email: session.user.email,
               role: 'teacher',
-              current_plan: initialPlan, // ⬅️ Utilisation du plan déterminé dynamiquement
+              current_plan: initialPlan,
             })
             .select()
             .single();
