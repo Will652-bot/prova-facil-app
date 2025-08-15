@@ -69,13 +69,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading: true,
   });
 
-  // Ref pour éviter les appels multiples simultanés
   const isUpdating = useRef(false);
 
   const updateUserState = useCallback(async (session: Session | null) => {
-    // Si la session est nulle ou si une mise à jour est déjà en cours, on sort
     if (!session?.user || isUpdating.current) {
-      // Si on se déconnecte, on met l'état à jour
       if (!session) {
         setState({ session: null, user: null, loading: false });
       }
@@ -100,18 +97,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let proTrialStartDate: string | null = null;
         let proTrialEnabled = false;
 
-        const { data: prospectMatch } = await supabase
+        const { data: prospectMatch, error: prospectError } = await supabase
             .from('prospects')
             .select('id, created_at')
             .eq('email', session.user.email)
             .maybeSingle();
 
+        if (prospectError) {
+          throw prospectError;
+        }
+
         if (prospectMatch) {
-            const { data: first100 } = await supabase
+            const { data: first100, error: first100Error } = await supabase
                 .from('prospects')
                 .select('email')
                 .order('created_at', { ascending: true })
                 .limit(100);
+
+            if (first100Error) {
+              throw first100Error;
+            }
 
             const isInFirst100 = first100?.some(p => p.email === session.user.email);
             if (isInFirst100) {
@@ -187,19 +192,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (isMounted) {
-          // Gérer la redirection ici
-          if (event === 'SIGNED_IN' && window.location.pathname === '/login') {
-            window.location.replace('/dashboard');
-          } else if (event === 'SIGNED_OUT' && window.location.pathname !== '/login') {
-            window.location.replace('/login');
+          if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'PASSWORD_RECOVERY') {
+            updateUserState(session);
           }
-          // Lancer la mise à jour de l'état utilisateur
-          updateUserState(session);
         }
       }
     );
 
-    // Charger la session initiale
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (isMounted) {
         updateUserState(session);
