@@ -158,20 +158,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Vérification initiale de la session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      updateUserState(session);
-    });
+    // Correction: Nous chargeons la session initiale et nous nous abonnons aux changements
+    const fetchSessionAndInitialize = async () => {
+      setState(prevState => ({ ...prevState, loading: true }));
+      const { data: { session } } = await supabase.auth.getSession();
+      await updateUserState(session);
+    };
 
+    fetchSessionAndInitialize();
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        // Mettre à jour l'état et le user sur chaque changement
-        updateUserState(session);
-        
-        if (event === 'SIGNED_IN' && window.location.pathname === '/login') {
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'PASSWORD_RECOVERY') {
+          updateUserState(session);
+          if (event === 'SIGNED_IN' && window.location.pathname === '/login') {
             window.location.replace('/dashboard');
-        } else if (event === 'SIGNED_OUT' && window.location.pathname !== '/login') {
+          } else if (event === 'SIGNED_OUT' && window.location.pathname !== '/login') {
             window.location.replace('/login');
+          }
         }
       }
     );
