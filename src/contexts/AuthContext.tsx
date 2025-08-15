@@ -51,31 +51,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           let initialPlan = 'free';
           try {
-            // ✅ Vérification présence dans prospects pour pro_trial
-            const { data: prospects, error: prospectsError } = await supabase
+            // ✅ Vérification présence dans prospects
+            const { data: prospectMatch, error: prospectError } = await supabase
               .from('prospects')
-              .select('email')
-              .eq('email', session.user.email);
+              .select('id, created_at')
+              .eq('email', session.user.email)
+              .maybeSingle();
 
-            if (prospectsError) throw prospectsError;
+            if (prospectError) throw prospectError;
 
-            const isProspect = prospects && prospects.length > 0;
+            if (prospectMatch) {
+              // Vérifier si ce prospect est dans les 100 premiers inscrits
+              const { data: first100, error: first100Error } = await supabase
+                .from('prospects')
+                .select('id, email, created_at')
+                .order('created_at', { ascending: true })
+                .limit(100);
 
-            const { count: totalProspects, error: countError } = await supabase
-              .from('prospects')
-              .select('*', { count: 'exact', head: true });
+              if (first100Error) throw first100Error;
 
-            if (countError) throw countError;
+              const isInFirst100 = first100.some(p => p.email === session.user.email);
 
-            const isUnderLimit = totalProspects !== null && totalProspects <= 100;
-
-            if (isProspect && isUnderLimit) {
-              initialPlan = 'pro_trial';
-              console.log('✅ Plan "pro_trial" attribué (prospect + sous limite).');
+              if (isInFirst100) {
+                initialPlan = 'pro_trial';
+                console.log('✅ Plan "pro_trial" attribué (dans les 100 premiers prospects).');
+              } else {
+                console.log('ℹ️ Prospect trouvé mais pas dans les 100 premiers, plan "free".');
+              }
             } else {
-              console.log('ℹ️ Plan "free" attribué (hors limite ou non prospect).');
+              console.log('ℹ️ Non prospect, plan "free".');
             }
-
           } catch (err) {
             console.error('❌ Exception lors de la vérification du plan:', err);
             initialPlan = 'free';
@@ -88,6 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               email: session.user.email,
               role: 'teacher',
               current_plan: initialPlan,
+              pro_trial_start_date: initialPlan === 'pro_trial' ? new Date().toISOString() : null,
+              pro_trial_enabled: initialPlan === 'pro_trial'
             })
             .select()
             .single();
@@ -100,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const trialDurationDays = 15;
 
-        // ✅ Mise à jour vers pro_trial si éligible
+        // 🔻 Gestion upgrade/downgrade essai
         if (
           userData.pro_trial_enabled &&
           userData.current_plan === 'free' &&
@@ -108,32 +115,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ) {
           const trialStartDate = new Date(userData.pro_trial_start_date);
           const now = new Date();
-          const diffTime = Math.abs(now.getTime() - trialStartDate.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          const diffDays = Math.ceil(
+            Math.abs(now.getTime() - trialStartDate.getTime()) / (1000 * 60 * 60 * 24)
+          );
 
           if (diffDays <= trialDurationDays) {
-            console.log('⬆️ [AuthContext] Utilisateur éligible à l\'essai Pro. Mise à jour vers pro_trial...');
+            console.log('⬆️ [AuthContext] Activation essai Pro.');
             const { error: updateError } = await supabase
               .from('users')
               .update({ current_plan: 'pro_trial' })
               .eq('id', session.user.id);
             if (!updateError) userData.current_plan = 'pro_trial';
           }
-        }
-
-        // 🔻 Rétrogradation si essai expiré
-        else if (
+        } else if (
           userData.current_plan === 'pro_trial' &&
           userData.pro_trial_enabled &&
           userData.pro_trial_start_date
         ) {
           const trialStartDate = new Date(userData.pro_trial_start_date);
           const now = new Date();
-          const diffTime = Math.abs(now.getTime() - trialStartDate.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          const diffDays = Math.ceil(
+            Math.abs(now.getTime() - trialStartDate.getTime()) / (1000 * 60 * 60 * 24)
+          );
 
           if (diffDays > trialDurationDays) {
-            console.log('⬇️ [AuthContext] Essai expiré. Rétrogradation vers free...');
+            console.log('⬇️ [AuthContext] Essai expiré -> free.');
             const { error: downgradeError } = await supabase
               .from('users')
               .update({ current_plan: 'free' })
@@ -142,12 +148,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // ✅ Calcul du flag isProOrTrial
+        // ✅ Flag isProOrTrial
         let isProOrTrial = false;
-        if (
-          userData.pro_subscription_active ||
-          userData.current_plan === 'pro'
-        ) {
+        if (userData.pro_subscription_active || userData.current_plan === 'pro') {
           isProOrTrial = true;
         } else if (
           userData.current_plan === 'pro_trial' &&
@@ -156,8 +159,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ) {
           const trialStartDate = new Date(userData.pro_trial_start_date);
           const now = new Date();
-          const diffTime = Math.abs(now.getTime() - trialStartDate.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          const diffDays = Math.ceil(
+            Math.abs(now.getTime() - trialStartDate.getTime()) / (1000 * 60 * 60 * 24)
+          );
           if (diffDays <= trialDurationDays) isProOrTrial = true;
         }
 
