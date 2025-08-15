@@ -158,24 +158,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Correction: Nous chargeons la session initiale et nous nous abonnons aux changements
-    const fetchSessionAndInitialize = async () => {
-      setState(prevState => ({ ...prevState, loading: true }));
-      const { data: { session } } = await supabase.auth.getSession();
-      await updateUserState(session);
-    };
-
-    fetchSessionAndInitialize();
-    
+    // ⚠️ Correction principale: Se fier uniquement à onAuthStateChange
+    // pour gérer les changements de session
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'PASSWORD_RECOVERY') {
-          updateUserState(session);
-          if (event === 'SIGNED_IN' && window.location.pathname === '/login') {
-            window.location.replace('/dashboard');
-          } else if (event === 'SIGNED_OUT' && window.location.pathname !== '/login') {
-            window.location.replace('/login');
-          }
+        // Mettre loading à true pour s'assurer que ProtectedRoute attend
+        setState(prevState => ({ ...prevState, loading: true }));
+        updateUserState(session);
+
+        if (event === 'SIGNED_IN' && window.location.pathname === '/login') {
+          window.location.replace('/dashboard');
+        } else if (event === 'SIGNED_OUT' && window.location.pathname !== '/login') {
+          window.location.replace('/login');
         }
       }
     );
