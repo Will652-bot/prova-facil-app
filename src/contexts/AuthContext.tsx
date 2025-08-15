@@ -49,7 +49,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 async function fetchWithRetry(query: any, retries = 3, delay = 500): Promise<any> {
   const { data, error } = await query;
   if (error?.code === '429' && retries > 0) {
-    console.warn(`⚠️ Erreur 429 détectée. Retraite de ${delay}ms... (Tentative ${4 - retries})`);
+    console.warn(`Warning: Erreur 429 détectée. Retraite de ${delay}ms... (Tentative ${4 - retries})`);
     await new Promise((res) => setTimeout(res, delay));
     return fetchWithRetry(query, retries - 1, delay * 2);
   }
