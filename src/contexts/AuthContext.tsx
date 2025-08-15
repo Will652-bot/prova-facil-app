@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { User, AuthState, SupabaseUser } from '../types';
+import { User, AuthState } from '../types';
 import { Session } from '@supabase/supabase-js';
 
-// Définition de l'interface pour les données utilisateur de la base de données
+// Définition de l'interface pour les données utilisateur récupérées depuis Supabase
 interface UserProfile {
   id: string;
   email: string;
@@ -16,7 +16,27 @@ interface UserProfile {
   full_name?: string;
 }
 
-// Définition de l'interface pour le contexte d'authentification
+// Fonction utilitaire pour calculer le statut de l'essai Pro
+const getTrialStatus = (userData: UserProfile, trialDurationDays: number) => {
+  const isTrialActive =
+    userData.pro_trial_enabled && userData.pro_trial_start_date && userData.current_plan === 'pro_trial';
+  
+  if (!isTrialActive) {
+    return { isTrialPeriod: false, diffDays: 0 };
+  }
+  
+  const trialStartDate = new Date(userData.pro_trial_start_date as string);
+  const now = new Date();
+  const diffDays = Math.ceil(
+    Math.abs(now.getTime() - trialStartDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  
+  return {
+    isTrialPeriod: diffDays <= trialDurationDays,
+    diffDays,
+  };
+};
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -25,10 +45,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
 }
 
-// Création du contexte
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Fournisseur du contexte d'authentification
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     session: null,
@@ -36,28 +54,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading: true,
   });
 
-  // Fonction utilitaire pour calculer le statut de l'essai Pro
-  const getTrialStatus = useCallback((userData: UserProfile, trialDurationDays: number) => {
-    const isTrialActive =
-      userData.pro_trial_enabled && userData.pro_trial_start_date && userData.current_plan === 'pro_trial';
-  
-    if (!isTrialActive) {
-      return { isTrialPeriod: false, diffDays: 0 };
-    }
-  
-    const trialStartDate = new Date(userData.pro_trial_start_date as string);
-    const now = new Date();
-    const diffDays = Math.ceil(
-      Math.abs(now.getTime() - trialStartDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-  
-    return {
-      isTrialPeriod: diffDays <= trialDurationDays,
-      diffDays,
-    };
-  }, []);
-
-  // Fonction pour mettre à jour l'état de l'utilisateur
   const updateUserState = useCallback(async (session: Session | null) => {
     console.log('🔄 [AuthContext] updateUserState - Session:', !!session);
 
@@ -67,7 +63,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Tenter de récupérer les données utilisateur depuis la table 'users'
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
@@ -76,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
       let finalUserData: UserProfile;
 
-      if (userError && userError.code === 'PGRST116') { // PGRST116 = ligne non trouvée
+      if (userError && userError.code === 'PGRST116') {
         console.log('🆕 [AuthContext] Utilisateur non trouvé, création du profil...');
 
         let initialPlan: UserProfile['current_plan'] = 'free';
@@ -124,7 +119,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (insertError) throw insertError;
         finalUserData = insertData as UserProfile;
-
       } else if (userError) {
         throw userError;
       } else {
@@ -134,7 +128,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const trialDurationDays = 15;
       const { isTrialPeriod, diffDays } = getTrialStatus(finalUserData, trialDurationDays);
 
-      // Si l'essai est expiré, le désactiver dans la base de données
       if (finalUserData.current_plan === 'pro_trial' && diffDays > trialDurationDays) {
         console.log('⬇️ [AuthContext] Essai expiré -> free.');
         const { error: downgradeError } = await supabase
@@ -147,7 +140,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Définir le flag 'isProOrTrial'
       const isProOrTrialUser = finalUserData.pro_subscription_active || finalUserData.current_plan === 'pro' || isTrialPeriod;
 
       const newUser: User = {
@@ -163,28 +155,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('❌ [AuthContext] Exception lors de la mise à jour de l’utilisateur:', error);
       setState({ session: null, user: null, loading: false });
     }
-  }, [getTrialStatus]);
+  }, []);
 
   useEffect(() => {
+    // Vérification initiale de la session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      updateUserState(session);
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Mettre à jour l'état et le user sur chaque changement
         updateUserState(session);
         
-        // Gérer les redirections basées sur l'événement
         if (event === 'SIGNED_IN' && window.location.pathname === '/login') {
-          window.location.replace('/dashboard');
+            window.location.replace('/dashboard');
         } else if (event === 'SIGNED_OUT' && window.location.pathname !== '/login') {
-          window.location.replace('/login');
+            window.location.replace('/login');
         }
       }
     );
-
-    // Charger la session initiale
-    const fetchSessionAndInitialize = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      updateUserState(session);
-    };
-    fetchSessionAndInitialize();
 
     return () => {
       subscription?.unsubscribe();
@@ -198,7 +188,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    // La redirection sera gérée par l'écouteur `onAuthStateChange`
   };
 
   const value = {
