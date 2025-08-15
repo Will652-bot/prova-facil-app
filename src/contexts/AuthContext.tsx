@@ -47,6 +47,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Fonction pour gérer le backoff exponentiel pour les requêtes Supabase
+async function fetchWithRetry(query: any, retries = 5, delay = 500): Promise<any> {
+    const { data, error } = await query;
+    if (error?.code === '429' && retries > 0) {
+        console.warn(`⚠️ Erreur 429 détectée. Retraite de ${delay}ms... (Tentative ${6 - retries})`);
+        await new Promise(res => setTimeout(res, delay));
+        return fetchWithRetry(query, retries - 1, delay * 2);
+    }
+    if (error) {
+        throw error;
+    }
+    return data;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     session: null,
@@ -63,12 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-        
+      const { data: userData, error: userError } = await fetchWithRetry(
+        supabase.from('users').select('*').eq('id', session.user.id).single()
+      );
+      
       let finalUserData: UserProfile;
 
       if (userError && userError.code === 'PGRST116') {
@@ -78,18 +90,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let proTrialStartDate: string | null = null;
         let proTrialEnabled = false;
 
-        const { data: prospectMatch } = await supabase
+        const { data: prospectMatch } = await fetchWithRetry(
+          supabase
             .from('prospects')
             .select('id, created_at')
             .eq('email', session.user.email)
-            .maybeSingle();
+            .maybeSingle()
+        );
 
         if (prospectMatch) {
-            const { data: first100 } = await supabase
-                .from('prospects')
-                .select('email')
-                .order('created_at', { ascending: true })
-                .limit(100);
+            const { data: first100 } = await fetchWithRetry(
+                supabase
+                    .from('prospects')
+                    .select('email')
+                    .order('created_at', { ascending: true })
+                    .limit(100)
+            );
 
             const isInFirst100 = first100?.some(p => p.email === session.user.email);
             if (isInFirst100) {
@@ -104,20 +120,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('ℹ️ Non prospect, plan "free".');
         }
 
-        const { data: insertData, error: insertError } = await supabase
-          .from('users')
-          .insert({
-            id: session.user.id,
-            email: session.user.email,
-            role: 'teacher',
-            current_plan: initialPlan,
-            pro_trial_start_date: proTrialStartDate,
-            pro_trial_enabled: proTrialEnabled,
-          })
-          .select()
-          .single();
+        const { data: insertData } = await fetchWithRetry(
+          supabase
+            .from('users')
+            .insert({
+              id: session.user.id,
+              email: session.user.email,
+              role: 'teacher',
+              current_plan: initialPlan,
+              pro_trial_start_date: proTrialStartDate,
+              pro_trial_enabled: proTrialEnabled,
+            })
+            .select()
+            .single()
+        );
 
-        if (insertError) throw insertError;
         finalUserData = insertData as UserProfile;
       } else if (userError) {
         throw userError;
@@ -130,14 +147,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (finalUserData.current_plan === 'pro_trial' && diffDays > trialDurationDays) {
         console.log('⬇️ [AuthContext] Essai expiré -> free.');
-        const { error: downgradeError } = await supabase
-          .from('users')
-          .update({ current_plan: 'free', pro_trial_enabled: false })
-          .eq('id', session.user.id);
-        if (!downgradeError) {
-          finalUserData.current_plan = 'free';
-          finalUserData.pro_trial_enabled = false;
-        }
+        await fetchWithRetry(
+          supabase
+            .from('users')
+            .update({ current_plan: 'free', pro_trial_enabled: false })
+            .eq('id', session.user.id)
+        );
+        finalUserData.current_plan = 'free';
+        finalUserData.pro_trial_enabled = false;
       }
 
       const isProOrTrialUser = finalUserData.pro_subscription_active || finalUserData.current_plan === 'pro' || isTrialPeriod;
@@ -158,18 +175,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // ⚠️ Correction principale: Se fier uniquement à onAuthStateChange
-    // pour gérer les changements de session
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        // Mettre loading à true pour s'assurer que ProtectedRoute attend
         setState(prevState => ({ ...prevState, loading: true }));
         updateUserState(session);
-
+        
         if (event === 'SIGNED_IN' && window.location.pathname === '/login') {
-          window.location.replace('/dashboard');
+            window.location.replace('/dashboard');
         } else if (event === 'SIGNED_OUT' && window.location.pathname !== '/login') {
-          window.location.replace('/login');
+            window.location.replace('/login');
         }
       }
     );
