@@ -18,20 +18,19 @@ interface UserProfile {
 
 // Fonction utilitaire pour calculer le statut de l'essai Pro
 const getTrialStatus = (userData: UserProfile | null, trialDurationDays: number) => {
-  // Correction: Vérifier si userData existe
   const isTrialActive =
     userData?.pro_trial_enabled && userData?.pro_trial_start_date && userData?.current_plan === 'pro_trial';
-  
+
   if (!isTrialActive) {
     return { isTrialPeriod: false, diffDays: 0 };
   }
-  
+
   const trialStartDate = new Date(userData.pro_trial_start_date as string);
   const now = new Date();
   const diffDays = Math.ceil(
     Math.abs(now.getTime() - trialStartDate.getTime()) / (1000 * 60 * 60 * 24)
   );
-  
+
   return {
     isTrialPeriod: diffDays <= trialDurationDays,
     diffDays,
@@ -50,16 +49,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Fonction pour gérer le backoff exponentiel pour les requêtes Supabase
 async function fetchWithRetry(query: any, retries = 5, delay = 500): Promise<any> {
-    const { data, error } = await query;
-    if (error?.code === '429' && retries > 0) {
-        console.warn(`⚠️ Erreur 429 détectée. Retraite de ${delay}ms... (Tentative ${6 - retries})`);
-        await new Promise(res => setTimeout(res, delay));
-        return fetchWithRetry(query, retries - 1, delay * 2);
-    }
-    if (error) {
-        throw error;
-    }
-    return data;
+  const { data, error } = await query;
+  if (error?.code === '429' && retries > 0) {
+    console.warn(`⚠️ Erreur 429 détectée. Retraite de ${delay}ms... (Tentative ${6 - retries})`);
+    await new Promise((res) => setTimeout(res, delay));
+    return fetchWithRetry(query, retries - 1, delay * 2);
+  }
+  if (error) {
+    throw error;
+  }
+  return data;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -71,67 +70,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateUserState = useCallback(async (session: Session | null) => {
     console.log('🔄 [AuthContext] updateUserState - Session:', !!session);
-
     if (!session?.user) {
       setState({ session: null, user: null, loading: false });
       return;
     }
 
     try {
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-        
-      let finalUserData: UserProfile | null = null; // Correction: Initialiser avec null
+      // Ne procéder que si l'utilisateur est authentifié
+      const { data: userData, error: userError } = await fetchWithRetry(
+        supabase.from('users').select('*').eq('id', session.user.id).single()
+      );
 
+      let finalUserData: UserProfile | null = null;
       if (userError && userError.code === 'PGRST116') {
         console.log('🆕 [AuthContext] Utilisateur non trouvé, création du profil...');
-
         let initialPlan: UserProfile['current_plan'] = 'free';
         let proTrialStartDate: string | null = null;
         let proTrialEnabled = false;
 
-        const { data: prospectMatch } = await supabase
-            .from('prospects')
-            .select('id, created_at')
-            .eq('email', session.user.email)
-            .maybeSingle();
+        const { data: prospectMatch } = await fetchWithRetry(
+          supabase.from('prospects').select('id, created_at').eq('email', session.user.email).maybeSingle()
+        );
 
         if (prospectMatch) {
-            const { data: first100 } = await supabase
-                .from('prospects')
-                .select('email')
-                .order('created_at', { ascending: true })
-                .limit(100);
-
-            const isInFirst100 = first100?.some(p => p.email === session.user.email);
-            if (isInFirst100) {
-                initialPlan = 'pro_trial';
-                proTrialStartDate = new Date().toISOString();
-                proTrialEnabled = true;
-                console.log('✅ Plan "pro_trial" attribué (dans les 100 premiers prospects).');
-            } else {
-                console.log('ℹ️ Prospect trouvé mais pas dans les 100 premiers, plan "free".');
-            }
+          const { data: first100 } = await fetchWithRetry(
+            supabase.from('prospects').select('email').order('created_at', { ascending: true }).limit(100)
+          );
+          const isInFirst100 = first100?.some((p) => p.email === session.user.email);
+          if (isInFirst100) {
+            initialPlan = 'pro_trial';
+            proTrialStartDate = new Date().toISOString();
+            proTrialEnabled = true;
+            console.log('✅ Plan "pro_trial" attribué (dans les 100 premiers prospects).');
+          } else {
+            console.log('ℹ️ Prospect trouvé mais pas dans les 100 premiers, plan "free".');
+          }
         } else {
-            console.log('ℹ️ Non prospect, plan "free".');
+          console.log('ℹ️ Non prospect, plan "free".');
         }
 
-        const { data: insertData, error: insertError } = await supabase
-          .from('users')
-          .insert({
-            id: session.user.id,
-            email: session.user.email,
-            role: 'teacher',
-            current_plan: initialPlan,
-            pro_trial_start_date: proTrialStartDate,
-            pro_trial_enabled: proTrialEnabled,
-          })
-          .select()
-          .single();
-
+        const { data: insertData, error: insertError } = await fetchWithRetry(
+          supabase
+            .from('users')
+            .insert({
+              id: session.user.id,
+              email: session.user.email,
+              role: 'teacher',
+              current_plan: initialPlan,
+              pro_trial_start_date: proTrialStartDate,
+              pro_trial_enabled: proTrialEnabled,
+            })
+            .select()
+            .single()
+        );
         if (insertError) throw insertError;
         finalUserData = insertData as UserProfile;
       } else if (userError) {
@@ -142,30 +133,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const trialDurationDays = 15;
       const { isTrialPeriod, diffDays } = getTrialStatus(finalUserData, trialDurationDays);
-
       if (finalUserData?.current_plan === 'pro_trial' && diffDays > trialDurationDays) {
         console.log('⬇️ [AuthContext] Essai expiré -> free.');
-        const { error: downgradeError } = await supabase
-          .from('users')
-          .update({ current_plan: 'free', pro_trial_enabled: false })
-          .eq('id', session.user.id);
+        const { error: downgradeError } = await fetchWithRetry(
+          supabase
+            .from('users')
+            .update({ current_plan: 'free', pro_trial_enabled: false })
+            .eq('id', session.user.id)
+        );
         if (!downgradeError) {
           finalUserData.current_plan = 'free';
           finalUserData.pro_trial_enabled = false;
         }
       }
 
-      const isProOrTrialUser = finalUserData?.pro_subscription_active || finalUserData?.current_plan === 'pro' || isTrialPeriod;
-
+      const isProOrTrialUser =
+        finalUserData?.pro_subscription_active || finalUserData?.current_plan === 'pro' || isTrialPeriod;
       const newUser: User = {
         ...session.user,
         ...finalUserData,
         isProOrTrial: isProOrTrialUser,
-        subscription_plan: finalUserData?.current_plan
+        subscription_plan: finalUserData?.current_plan,
       };
-
       setState({ session, user: newUser, loading: false });
-
     } catch (error) {
       console.error('❌ [AuthContext] Exception lors de la mise à jour de l’utilisateur:', error);
       setState({ session: null, user: null, loading: false });
@@ -173,17 +163,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Initialiser uniquement avec la session existante, sans requêtes immédiates
     supabase.auth.getSession().then(({ data: { session } }) => {
       updateUserState(session);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'PASSWORD_RECOVERY') {
-          updateUserState(session);
-        }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'PASSWORD_RECOVERY') {
+        updateUserState(session);
       }
-    );
+    });
 
     return () => {
       subscription?.unsubscribe();
