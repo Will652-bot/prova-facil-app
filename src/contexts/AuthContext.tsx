@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+```typescript
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { User, AuthState } from '../types';
 import { Session } from '@supabase/supabase-js';
@@ -20,17 +21,14 @@ interface UserProfile {
 const getTrialStatus = (userData: UserProfile | null, trialDurationDays: number) => {
   const isTrialActive =
     userData?.pro_trial_enabled && userData?.pro_trial_start_date && userData?.current_plan === 'pro_trial';
-
   if (!isTrialActive) {
     return { isTrialPeriod: false, diffDays: 0 };
   }
-
   const trialStartDate = new Date(userData.pro_trial_start_date as string);
   const now = new Date();
   const diffDays = Math.ceil(
     Math.abs(now.getTime() - trialStartDate.getTime()) / (1000 * 60 * 60 * 24)
   );
-
   return {
     isTrialPeriod: diffDays <= trialDurationDays,
     diffDays,
@@ -48,14 +46,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Fonction pour gérer le backoff exponentiel pour les requêtes Supabase
-async function fetchWithRetry(query: any, retries = 5, delay = 500): Promise<any> {
+async function fetchWithRetry(query: any, retries = 3, delay = 500): Promise<any> {
   const { data, error } = await query;
   if (error?.code === '429' && retries > 0) {
-    console.warn(`⚠️ Erreur 429 détectée. Retraite de ${delay}ms... (Tentative ${6 - retries})`);
+    console.warn(`⚠️ Erreur 429 détectée. Retraite de ${delay}ms... (Tentative ${4 - retries})`);
     await new Promise((res) => setTimeout(res, delay));
     return fetchWithRetry(query, retries - 1, delay * 2);
   }
   if (error) {
+    console.error(`❌ Erreur lors de la requête: ${error.message} (Code: ${error.code})`);
     throw error;
   }
   return data;
@@ -68,15 +67,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading: true,
   });
 
+  // Ref pour éviter les appels multiples simultanés
+  const isUpdating = useRef(false);
+
   const updateUserState = useCallback(async (session: Session | null) => {
+    if (!session?.user || isUpdating.current) return;
+
+    isUpdating.current = true;
     console.log('🔄 [AuthContext] updateUserState - Session:', !!session);
-    if (!session?.user) {
-      setState({ session: null, user: null, loading: false });
-      return;
-    }
+    setState((prev) => ({ ...prev, loading: true }));
 
     try {
-      // Ne procéder que si l'utilisateur est authentifié
       const { data: userData, error: userError } = await fetchWithRetry(
         supabase.from('users').select('*').eq('id', session.user.id).single()
       );
@@ -123,8 +124,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .select()
             .single()
         );
-        if (insertError) throw insertError;
-        finalUserData = insertData as UserProfile;
+
+        if (insertError) {
+          if (insertError.code === '23505') { // Contrainte unique (e.g., email)
+            console.warn('⚠️ Contrainte unique violée (email déjà utilisé), réessai avec SELECT...');
+            const { data: existingUser } = await fetchWithRetry(
+              supabase.from('users').select('*').eq('id', session.user.id).single()
+            );
+            finalUserData = existingUser as UserProfile;
+          } else {
+            throw insertError;
+          }
+        } else {
+          finalUserData = insertData as UserProfile;
+        }
       } else if (userError) {
         throw userError;
       } else {
@@ -155,26 +168,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isProOrTrial: isProOrTrialUser,
         subscription_plan: finalUserData?.current_plan,
       };
+
       setState({ session, user: newUser, loading: false });
     } catch (error) {
-      console.error('❌ [AuthContext] Exception lors de la mise à jour de l’utilisateur:', error);
-      setState({ session: null, user: null, loading: false });
+      console.error('❌ [AuthContext] Exception lors de la mise à jour:', error);
+      setState((prev) => ({ ...prev, user: null, loading: false }));
+    } finally {
+      isUpdating.current = false;
     }
   }, []);
 
   useEffect(() => {
-    // Initialiser uniquement avec la session existante, sans requêtes immédiates
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      updateUserState(session);
-    });
+    let isMounted = true;
+
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (isMounted) updateUserState(session);
+    };
+
+    initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'PASSWORD_RECOVERY') {
+      if (isMounted && (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'PASSWORD_RECOVERY')) {
         updateUserState(session);
       }
     });
 
     return () => {
+      isMounted = false;
       subscription?.unsubscribe();
     };
   }, [updateUserState]);
@@ -186,6 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setState({ session: null, user: null, loading: false });
   };
 
   const value = {
@@ -206,3 +228,4 @@ export const useAuth = () => {
   }
   return context;
 };
+```
