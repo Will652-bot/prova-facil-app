@@ -1,6 +1,41 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { User, AuthState } from '../types';
+import { Session } from '@supabase/supabase-js';
+
+// Définition de l'interface pour les données utilisateur récupérées depuis Supabase
+interface UserProfile {
+  id: string;
+  email: string;
+  role: string;
+  current_plan: string;
+  pro_subscription_active: boolean;
+  subscription_expires_at: string | null;
+  pro_trial_start_date: string | null;
+  pro_trial_enabled: boolean;
+  full_name?: string;
+}
+
+// Fonction utilitaire pour calculer le statut de l'essai Pro
+const getTrialStatus = (userData: UserProfile | null, trialDurationDays: number) => {
+  const isTrialActive =
+    userData?.pro_trial_enabled && userData?.pro_trial_start_date && userData?.current_plan === 'pro_trial';
+  
+  if (!isTrialActive) {
+    return { isTrialPeriod: false, diffDays: 0 };
+  }
+  
+  const trialStartDate = new Date(userData.pro_trial_start_date as string);
+  const now = new Date();
+  const diffDays = Math.ceil(
+    Math.abs(now.getTime() - trialStartDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  
+  return {
+    isTrialPeriod: diffDays <= trialDurationDays,
+    diffDays,
+  };
+};
 
 interface AuthContextType {
   user: User | null;
@@ -12,6 +47,21 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Fonction pour gérer le backoff exponentiel pour les requêtes Supabase
+async function fetchWithRetry(query: any, retries = 3, delay = 500): Promise<any> {
+    const { data, error } = await query;
+    if (error?.code === '429' && retries > 0) {
+        console.warn(`Warning: Erreur 429 détectée. Retraite de ${delay}ms... (Tentative ${4 - retries})`);
+        await new Promise(res => setTimeout(res, delay));
+        return fetchWithRetry(query, retries - 1, delay * 2);
+    }
+    if (error) {
+        console.error(`❌ Erreur lors de la requête: ${error.message} (Code: ${error.code})`);
+        throw error;
+    }
+    return data;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     session: null,
@@ -19,193 +69,148 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading: true,
   });
 
-  const updateUserState = async (session: any) => {
-    console.log('🔄 [AuthContext] updateUserState - Session:', !!session);
+  // Ref pour éviter les appels multiples simultanés
+  const isUpdating = useRef(false);
 
-    if (session?.user) {
-      try {
-        let userData;
-
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (!data) {
-          console.log('🆕 [AuthContext] Utilisateur non trouvé dans la table users, création et activation du plan Pro Trial...');
-          const { data: insertData, error: insertError } = await supabase
-            .from('users')
-            .insert({
-              id: session.user.id,
-              email: session.user.email,
-              role: 'teacher',
-              current_plan: 'pro_trial',
-            })
-            .select('*')
-            .single();
-          if (insertError) throw insertError;
-          userData = insertData;
-        } else {
-          userData = data;
-        }
-
-        const trialDurationDays = 15;
-
-        // ✅ Mise à jour vers pro_trial si éligible
-        if (
-          userData.pro_trial_enabled &&
-          userData.current_plan === 'free' &&
-          userData.pro_trial_start_date
-        ) {
-          const trialStartDate = new Date(userData.pro_trial_start_date);
-          const now = new Date();
-          const diffTime = Math.abs(now.getTime() - trialStartDate.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-          if (diffDays <= trialDurationDays) {
-            console.log(
-              '⬆️ [AuthContext] Utilisateur éligible à l\'essai Pro. Mise à jour vers pro_trial...'
-            );
-            const { error: updateError } = await supabase
-              .from('users')
-              .update({ current_plan: 'pro_trial' })
-              .eq('id', session.user.id);
-            if (updateError) {
-              console.error(
-                '❌ [AuthContext] Erreur mise à jour pro_trial:',
-                updateError.message
-              );
-            } else {
-              userData.current_plan = 'pro_trial';
-              console.log('✅ [AuthContext] Plan mis à jour vers pro_trial.');
-            }
-          } else {
-            console.log('⏳ [AuthContext] Essai Pro expiré (utilisateur en plan free).');
-          }
-        }
-
-        // 🔻 Rétrogradation si essai expiré
-        else if (
-          userData.current_plan === 'pro_trial' &&
-          userData.pro_trial_enabled &&
-          userData.pro_trial_start_date
-        ) {
-          const trialStartDate = new Date(userData.pro_trial_start_date);
-          const now = new Date();
-          const diffTime = Math.abs(now.getTime() - trialStartDate.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-          if (diffDays > trialDurationDays) {
-            console.log('⬇️ [AuthContext] Essai expiré. Rétrogradation vers free...');
-            const { error: downgradeError } = await supabase
-              .from('users')
-              .update({ current_plan: 'free' })
-              .eq('id', session.user.id);
-            if (downgradeError) {
-              console.error(
-                '❌ [AuthContext] Erreur rétrogradation plan expiré:',
-                downgradeError.message
-              );
-            } else {
-              userData.current_plan = 'free';
-              console.log('✅ [AuthContext] Plan rétrogradé vers free.');
-            }
-          }
-        }
-
-        // ✅ Calcul du flag isProOrTrial
-        let isProOrTrial = false;
-
-        if (
-          userData.pro_subscription_active ||
-          userData.current_plan === 'pro'
-        ) {
-          isProOrTrial = true;
-        } else if (
-          userData.current_plan === 'pro_trial' &&
-          userData.pro_trial_enabled &&
-          userData.pro_trial_start_date
-        ) {
-          const trialStartDate = new Date(userData.pro_trial_start_date);
-          const now = new Date();
-          const diffTime = Math.abs(now.getTime() - trialStartDate.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          if (diffDays <= trialDurationDays) {
-            isProOrTrial = true;
-          }
-        }
-
-        const newUser: User = {
-          ...session.user,
-          role: userData.role,
-          subscription_plan: userData.current_plan,
-          full_name: userData.full_name,
-          pro_subscription_active: userData.pro_subscription_active,
-          subscription_expires_at: userData.subscription_expires_at,
-          current_plan: userData.current_plan,
-          pro_trial_start_date: userData.pro_trial_start_date,
-          pro_trial_enabled: userData.pro_trial_enabled,
-          isProOrTrial,
-        };
-
-        console.log(
-          '✅ [AuthContext] Utilisateur mis à jour:',
-          newUser.email,
-          'Plan Pro/Trial:',
-          newUser.isProOrTrial,
-          'Current Plan DB:',
-          newUser.current_plan
-        );
-        setState({ session, user: newUser, loading: false });
-      } catch (error) {
-        console.error('❌ [AuthContext] Exception mise à jour utilisateur:', error);
+  const updateUserState = useCallback(async (session: Session | null) => {
+    // Si la session est nulle ou si une mise à jour est déjà en cours, on sort
+    if (!session?.user || isUpdating.current) {
+      // Si on se déconnecte, on met l'état à jour
+      if (!session) {
         setState({ session: null, user: null, loading: false });
       }
-    } else {
-      console.log('🧹 [AuthContext] Nettoyage état utilisateur');
-      setState({ session: null, user: null, loading: false });
+      return;
     }
-  };
+
+    isUpdating.current = true;
+    console.log('🔄 [AuthContext] updateUserState - Session:', !!session);
+    setState((prev) => ({ ...prev, loading: true }));
+
+    try {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+        
+      let finalUserData: UserProfile | null = null;
+      if (userError && userError.code === 'PGRST116') {
+        console.log('🆕 [AuthContext] Utilisateur non trouvé, création du profil...');
+        let initialPlan: UserProfile['current_plan'] = 'free';
+        let proTrialStartDate: string | null = null;
+        let proTrialEnabled = false;
+
+        const { data: prospectMatch } = await supabase
+            .from('prospects')
+            .select('id, created_at')
+            .eq('email', session.user.email)
+            .maybeSingle();
+
+        if (prospectMatch) {
+            const { data: first100 } = await supabase
+                .from('prospects')
+                .select('email')
+                .order('created_at', { ascending: true })
+                .limit(100);
+
+            const isInFirst100 = first100?.some(p => p.email === session.user.email);
+            if (isInFirst100) {
+                initialPlan = 'pro_trial';
+                proTrialStartDate = new Date().toISOString();
+                proTrialEnabled = true;
+                console.log('✅ Plan "pro_trial" attribué (dans les 100 premiers prospects).');
+            } else {
+                console.log('ℹ️ Prospect trouvé mais pas dans les 100 premiers, plan "free".');
+            }
+        } else {
+            console.log('ℹ️ Non prospect, plan "free".');
+        }
+
+        const { data: insertData, error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: session.user.id,
+            email: session.user.email,
+            role: 'teacher',
+            current_plan: initialPlan,
+            pro_trial_start_date: proTrialStartDate,
+            pro_trial_enabled: proTrialEnabled,
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          throw insertError;
+        } else {
+          finalUserData = insertData as UserProfile;
+        }
+      } else if (userError) {
+        throw userError;
+      } else {
+        finalUserData = userData as UserProfile;
+      }
+
+      const trialDurationDays = 15;
+      const { isTrialPeriod, diffDays } = getTrialStatus(finalUserData, trialDurationDays);
+      if (finalUserData?.current_plan === 'pro_trial' && diffDays > trialDurationDays) {
+        console.log('⬇️ [AuthContext] Essai expiré -> free.');
+        const { error: downgradeError } = await supabase
+          .from('users')
+          .update({ current_plan: 'free', pro_trial_enabled: false })
+          .eq('id', session.user.id);
+        if (!downgradeError) {
+          finalUserData.current_plan = 'free';
+          finalUserData.pro_trial_enabled = false;
+        }
+      }
+
+      const isProOrTrialUser =
+        finalUserData?.pro_subscription_active || finalUserData?.current_plan === 'pro' || isTrialPeriod;
+      const newUser: User = {
+        ...session.user,
+        ...finalUserData,
+        isProOrTrial: isProOrTrialUser,
+        subscription_plan: finalUserData?.current_plan,
+      };
+
+      setState({ session, user: newUser, loading: false });
+    } catch (error) {
+      console.error('❌ [AuthContext] Exception lors de la mise à jour:', error);
+      setState((prev) => ({ ...prev, user: null, loading: false }));
+    } finally {
+      isUpdating.current = false;
+    }
+  }, []);
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      await updateUserState(session);
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          console.log('🔔 [AuthContext] AuthStateChange:', { event, hasSession: !!session });
-
-          if (event === 'PASSWORD_RECOVERY') {
-            console.log('🔄 [AuthContext] Événement PASSWORD_RECOVERY, pas de redirection.');
-            await updateUserState(session);
-            return;
+    let isMounted = true;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (isMounted) {
+          // Gérer la redirection ici
+          if (event === 'SIGNED_IN' && window.location.pathname === '/login') {
+            window.location.replace('/dashboard');
+          } else if (event === 'SIGNED_OUT' && window.location.pathname !== '/login') {
+            window.location.replace('/login');
           }
-
-          if (event === 'SIGNED_IN') {
-            await updateUserState(session);
-            if (session && window.location.pathname === '/login') {
-              window.location.replace('/dashboard');
-            }
-          }
-
-          if (event === 'SIGNED_OUT') {
-            setState({ session: null, user: null, loading: false });
-            if (window.location.pathname !== '/login') {
-              window.location.replace('/login');
-            }
-          }
+          // Lancer la mise à jour de l'état utilisateur
+          updateUserState(session);
         }
-      );
+      }
+    );
 
-      return () => {
-        subscription?.unsubscribe();
-      };
+    // Charger la session initiale
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (isMounted) {
+        updateUserState(session);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
     };
-
-    initializeAuth();
-  }, []);
+  }, [updateUserState]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -215,7 +220,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setState({ session: null, user: null, loading: false });
-    window.location.replace('/login');
   };
 
   const value = {
