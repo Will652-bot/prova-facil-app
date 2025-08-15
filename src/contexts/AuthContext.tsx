@@ -17,9 +17,10 @@ interface UserProfile {
 }
 
 // Fonction utilitaire pour calculer le statut de l'essai Pro
-const getTrialStatus = (userData: UserProfile, trialDurationDays: number) => {
+const getTrialStatus = (userData: UserProfile | null, trialDurationDays: number) => {
+  // Correction: Vérifier si userData existe
   const isTrialActive =
-    userData.pro_trial_enabled && userData.pro_trial_start_date && userData.current_plan === 'pro_trial';
+    userData?.pro_trial_enabled && userData?.pro_trial_start_date && userData?.current_plan === 'pro_trial';
   
   if (!isTrialActive) {
     return { isTrialPeriod: false, diffDays: 0 };
@@ -77,11 +78,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const { data: userData, error: userError } = await fetchWithRetry(
-        supabase.from('users').select('*').eq('id', session.user.id).single()
-      );
-      
-      let finalUserData: UserProfile;
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+        
+      let finalUserData: UserProfile | null = null; // Correction: Initialiser avec null
 
       if (userError && userError.code === 'PGRST116') {
         console.log('🆕 [AuthContext] Utilisateur non trouvé, création du profil...');
@@ -90,22 +93,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let proTrialStartDate: string | null = null;
         let proTrialEnabled = false;
 
-        const { data: prospectMatch } = await fetchWithRetry(
-          supabase
+        const { data: prospectMatch } = await supabase
             .from('prospects')
             .select('id, created_at')
             .eq('email', session.user.email)
-            .maybeSingle()
-        );
+            .maybeSingle();
 
         if (prospectMatch) {
-            const { data: first100 } = await fetchWithRetry(
-                supabase
-                    .from('prospects')
-                    .select('email')
-                    .order('created_at', { ascending: true })
-                    .limit(100)
-            );
+            const { data: first100 } = await supabase
+                .from('prospects')
+                .select('email')
+                .order('created_at', { ascending: true })
+                .limit(100);
 
             const isInFirst100 = first100?.some(p => p.email === session.user.email);
             if (isInFirst100) {
@@ -120,21 +119,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('ℹ️ Non prospect, plan "free".');
         }
 
-        const { data: insertData } = await fetchWithRetry(
-          supabase
-            .from('users')
-            .insert({
-              id: session.user.id,
-              email: session.user.email,
-              role: 'teacher',
-              current_plan: initialPlan,
-              pro_trial_start_date: proTrialStartDate,
-              pro_trial_enabled: proTrialEnabled,
-            })
-            .select()
-            .single()
-        );
+        const { data: insertData, error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: session.user.id,
+            email: session.user.email,
+            role: 'teacher',
+            current_plan: initialPlan,
+            pro_trial_start_date: proTrialStartDate,
+            pro_trial_enabled: proTrialEnabled,
+          })
+          .select()
+          .single();
 
+        if (insertError) throw insertError;
         finalUserData = insertData as UserProfile;
       } else if (userError) {
         throw userError;
@@ -145,25 +143,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const trialDurationDays = 15;
       const { isTrialPeriod, diffDays } = getTrialStatus(finalUserData, trialDurationDays);
 
-      if (finalUserData.current_plan === 'pro_trial' && diffDays > trialDurationDays) {
+      if (finalUserData?.current_plan === 'pro_trial' && diffDays > trialDurationDays) {
         console.log('⬇️ [AuthContext] Essai expiré -> free.');
-        await fetchWithRetry(
-          supabase
-            .from('users')
-            .update({ current_plan: 'free', pro_trial_enabled: false })
-            .eq('id', session.user.id)
-        );
-        finalUserData.current_plan = 'free';
-        finalUserData.pro_trial_enabled = false;
+        const { error: downgradeError } = await supabase
+          .from('users')
+          .update({ current_plan: 'free', pro_trial_enabled: false })
+          .eq('id', session.user.id);
+        if (!downgradeError) {
+          finalUserData.current_plan = 'free';
+          finalUserData.pro_trial_enabled = false;
+        }
       }
 
-      const isProOrTrialUser = finalUserData.pro_subscription_active || finalUserData.current_plan === 'pro' || isTrialPeriod;
+      const isProOrTrialUser = finalUserData?.pro_subscription_active || finalUserData?.current_plan === 'pro' || isTrialPeriod;
 
       const newUser: User = {
         ...session.user,
         ...finalUserData,
         isProOrTrial: isProOrTrialUser,
-        subscription_plan: finalUserData.current_plan
+        subscription_plan: finalUserData?.current_plan
       };
 
       setState({ session, user: newUser, loading: false });
@@ -175,15 +173,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      updateUserState(session);
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setState(prevState => ({ ...prevState, loading: true }));
-        updateUserState(session);
-        
-        if (event === 'SIGNED_IN' && window.location.pathname === '/login') {
-            window.location.replace('/dashboard');
-        } else if (event === 'SIGNED_OUT' && window.location.pathname !== '/login') {
-            window.location.replace('/login');
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'PASSWORD_RECOVERY') {
+          updateUserState(session);
         }
       }
     );
