@@ -25,7 +25,7 @@ import TrialPlanBanner from '../components/TrialPlanBanner';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuth(); // Utilisation correcte du hook useAuth
   const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState<Class[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -47,6 +47,7 @@ export const DashboardPage: React.FC = () => {
 
       const dismissed = localStorage.getItem(`demo-banner-dismissed-${user.id}`) === 'true';
       
+      // La bannière est affichée uniquement s'il n'y a pas de données de démo et qu'elle n'a pas été ignorée
       setShowDemoBanner(!data && !dismissed);
       setBannerDismissed(dismissed);
     } catch (error) {
@@ -55,6 +56,12 @@ export const DashboardPage: React.FC = () => {
   }, [user?.id]);
 
   const fetchDashboardData = useCallback(async () => {
+    // Vérification de l'existence de l'utilisateur avant d'effectuer les requêtes
+    if (!user?.id) {
+        setLoading(false);
+        return;
+    }
+
     const abortController = new AbortController();
 
     try {
@@ -64,17 +71,17 @@ export const DashboardPage: React.FC = () => {
         supabase
           .from('classes')
           .select('*')
-          .eq('teacher_id', user?.id)
+          .eq('teacher_id', user.id)
           .order('created_at', { ascending: false }),
         supabase
           .from('students')
           .select('*')
-          .eq('teacher_id', user?.id)
+          .eq('teacher_id', user.id)
           .order('created_at', { ascending: false }),
         supabase
           .from('evaluations')
           .select('*')
-          .eq('teacher_id', user?.id),
+          .eq('teacher_id', user.id),
         supabase
           .from('evaluations')
           .select(`
@@ -84,7 +91,7 @@ export const DashboardPage: React.FC = () => {
             criteria:criteria(name),
             evaluation_title:evaluation_titles(title)
           `)
-          .eq('teacher_id', user?.id)
+          .eq('teacher_id', user.id)
           .order('created_at', { ascending: false })
           .limit(5)
       ]);
@@ -117,15 +124,20 @@ export const DashboardPage: React.FC = () => {
   }, [user?.id]);
 
   useEffect(() => {
-    const cleanup = fetchDashboardData();
-    return () => {
-      cleanup.then(abort => abort());
-    };
-  }, [fetchDashboardData]);
+    // Si l'utilisateur n'est pas encore chargé, on n'appelle pas fetchDashboardData
+    if (user) {
+        const cleanup = fetchDashboardData();
+        return () => {
+            cleanup.then(abort => abort());
+        };
+    }
+  }, [user, fetchDashboardData]);
 
   useEffect(() => {
-    checkDemoDataExists();
-  }, [checkDemoDataExists]);
+    if (user) {
+        checkDemoDataExists();
+    }
+  }, [user, checkDemoDataExists]);
 
   const handleDismissBanner = () => {
     if (user?.id) {
@@ -172,7 +184,8 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in">
-      <TrialPlanBanner />
+      {/* La bannière d'essai ne s'affiche que si l'utilisateur a le plan pro_trial */}
+      {user?.isProOrTrial && user.subscription_plan === 'pro_trial' && <TrialPlanBanner />}
 
       {/* Demo Data Banner */}
       {showDemoBanner && (
@@ -307,7 +320,6 @@ export const DashboardPage: React.FC = () => {
                 >
                   <div className="mb-3 sm:mb-0">
                     <h4 className="font-medium text-gray-900">
-                      {/* Utiliser le titre de evaluation_title si disponible, sinon fallback sur title */}
                       {evaluation.evaluation_title?.title || evaluation.title}
                     </h4>
                     <p className="text-sm text-gray-500">
