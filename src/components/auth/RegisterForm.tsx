@@ -1,10 +1,8 @@
-// src/components/auth/RegisterForm.tsx
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
-import { PasswordGenerator } from './PasswordGenerator'; // Importe o gerador de senha
+import { PasswordGenerator } from './PasswordGenerator';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { Label } from '../ui/Label';
@@ -15,14 +13,14 @@ export const RegisterForm: React.FC = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: '', // Campo para confirmação de senha
+    confirmPassword: '',
   });
 
   const validatePassword = (password: string) => {
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumbers = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};:'",.<>/?\\|]/.test(password); // Caractères spéciaux
+    const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};:'",.<>/?\\|]/.test(password);
     const isLongEnough = password.length >= 8;
     return hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar && isLongEnough;
   };
@@ -52,33 +50,37 @@ export const RegisterForm: React.FC = () => {
       setLoading(false);
       return;
     }
-    
-    // Tentative d'inscription
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
-    });
 
-    if (signUpError) {
-      if (signUpError.message?.includes('user already registered')) {
-        toast.error('Este e-mail já está registrado. Um código de verificação foi enviado para ele.');
-        // Si l'utilisateur est déjà enregistré, on lui envoie un OTP pour se connecter
-        await supabase.auth.signInWithOtp({ email: formData.email });
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (signUpError) {
+        if (signUpError.message?.includes('user already registered')) {
+          toast.error('Este e-mail já está registrado. Enviando um novo código de verificação.');
+          await supabase.auth.signInWithOtp({ email: formData.email });
+          navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}&type=email`);
+        } else if (signUpError.message?.includes('email_address_invalid')) {
+          toast.error('E-mail inválido.');
+        } else if (signUpError.message?.includes('over_email_send_rate_limit')) {
+          toast.error('Limite de envio de e-mail excedido. Por favor, tente novamente mais tarde.');
+        } else {
+          toast.error(`Erro durante o cadastro: ${signUpError.message}. Por favor, verifique seu e-mail e tente novamente.`);
+        }
+      } else if (data.user) {
+        toast.success('Conta criada com sucesso! Por favor, verifique seu e-mail para confirmar o registro.');
         navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}&type=email`);
-      } else if (signUpError.message?.includes('email_address_invalid')) {
-        toast.error('E-mail inválido.');
-      } else if (signUpError.message?.includes('over_email_send_rate_limit')) {
-        toast.error('Limite de envio excedido. Por favor, tente novamente mais tarde.');
       } else {
-        toast.error(`Erro durante o cadastro: ${signUpError.message}. Por favor, verifique seu e-mail e tente novamente.`);
+        toast.error('Ocorreu um erro inesperado durante o cadastro.');
       }
-    } else {
-      toast.success('Conta criada com sucesso! Por favor, insira o código de verificação enviado para seu e-mail.');
-      // La logique d'insertion dans la table 'users' est maintenant gérée par AuthContext
-      navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}&type=email`);
+    } catch (e) {
+      toast.error('Ocorreu um erro inesperado. Por favor, tente novamente.');
+      console.error('❌ Erro inesperado no registro:', e);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handlePasswordGenerate = (password: string) => {
@@ -128,7 +130,6 @@ export const RegisterForm: React.FC = () => {
           />
         </div>
 
-        {/* Componente pour générer un mot de passe fort */}
         <PasswordGenerator onGenerate={handlePasswordGenerate} />
       </div>
 
