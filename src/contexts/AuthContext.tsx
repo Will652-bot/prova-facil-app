@@ -69,10 +69,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading: true,
   });
 
+  // Ref pour éviter les appels multiples simultanés
   const isUpdating = useRef(false);
 
   const updateUserState = useCallback(async (session: Session | null) => {
+    // Si la session est nulle ou si une mise à jour est déjà en cours, on sort
     if (!session?.user || isUpdating.current) {
+      // Si on se déconnecte, on met l'état à jour
       if (!session) {
         setState({ session: null, user: null, loading: false });
       }
@@ -84,111 +87,93 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, loading: true }));
 
     try {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+        
       let finalUserData: UserProfile | null = null;
-      let userData = null;
+      if (userError && userError.code === 'PGRST116') {
+        console.log('🆕 [AuthContext] Utilisateur non trouvé, création du profil...');
+        let initialPlan: UserProfile['current_plan'] = 'free';
+        let proTrialStartDate: string | null = null;
+        let proTrialEnabled = false;
 
-      try {
-          const { data, error } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-          userData = data;
-          if (error && error.code !== 'PGRST116') {
-              throw error;
-          }
-      } catch (e: any) {
-          if (e.code !== 'PGRST116') { // Gérer les erreurs autres que "ligne non trouvée"
-              throw e;
-          }
-      }
-      
-      // Si l'utilisateur n'existe pas dans la table 'users', on le crée
-      if (!userData) {
-          console.log('🆕 [AuthContext] Utilisateur non trouvé, création du profil...');
-          let initialPlan: UserProfile['current_plan'] = 'free';
-          let proTrialStartDate: string | null = null;
-          let proTrialEnabled = false;
-          
-          const { data: prospectMatch, error: prospectError } = await supabase
-              .from('prospects')
-              .select('id, created_at')
-              .eq('email', session.user.email)
-              .maybeSingle();
-  
-          if (prospectError) throw prospectError;
-  
-          if (prospectMatch) {
-              const { data: first100, error: first100Error } = await supabase
-                  .from('prospects')
-                  .select('email')
-                  .order('created_at', { ascending: true })
-                  .limit(100);
-  
-              if (first100Error) throw first100Error;
-  
-              const isInFirst100 = first100?.some(p => p.email === session.user.email);
-              if (isInFirst100) {
-                  initialPlan = 'pro_trial';
-                  proTrialStartDate = new Date().toISOString();
-                  proTrialEnabled = true;
-                  console.log('✅ Plan "pro_trial" attribué (dans les 100 premiers prospects).');
-              } else {
-                  console.log('ℹ️ Prospect trouvé mais pas dans les 100 premiers, plan "free".');
-              }
-          } else {
-              console.log('ℹ️ Non prospect, plan "free".');
-          }
-  
-          const { data: insertData, error: insertError } = await supabase
-              .from('users')
-              .insert({
-                  id: session.user.id,
-                  email: session.user.email,
-                  role: 'teacher',
-                  current_plan: initialPlan,
-                  pro_trial_start_date: proTrialStartDate,
-                  pro_trial_enabled: proTrialEnabled,
-              })
-              .select()
-              .single();
-  
-          if (insertError) throw insertError;
+        const { data: prospectMatch } = await supabase
+            .from('prospects')
+            .select('id, created_at')
+            .eq('email', session.user.email)
+            .maybeSingle();
+
+        if (prospectMatch) {
+            const { data: first100 } = await supabase
+                .from('prospects')
+                .select('email')
+                .order('created_at', { ascending: true })
+                .limit(100);
+
+            const isInFirst100 = first100?.some(p => p.email === session.user.email);
+            if (isInFirst100) {
+                initialPlan = 'pro_trial';
+                proTrialStartDate = new Date().toISOString();
+                proTrialEnabled = true;
+                console.log('✅ Plan "pro_trial" attribué (dans les 100 premiers prospects).');
+            } else {
+                console.log('ℹ️ Prospect trouvé mais pas dans les 100 premiers, plan "free".');
+            }
+        } else {
+            console.log('ℹ️ Non prospect, plan "free".');
+        }
+
+        const { data: insertData, error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: session.user.id,
+            email: session.user.email,
+            role: 'teacher',
+            current_plan: initialPlan,
+            pro_trial_start_date: proTrialStartDate,
+            pro_trial_enabled: proTrialEnabled,
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          throw insertError;
+        } else {
           finalUserData = insertData as UserProfile;
-  
+        }
+      } else if (userError) {
+        throw userError;
       } else {
-          finalUserData = userData as UserProfile;
+        finalUserData = userData as UserProfile;
       }
-  
+
       const trialDurationDays = 15;
       const { isTrialPeriod, diffDays } = getTrialStatus(finalUserData, trialDurationDays);
-  
       if (finalUserData?.current_plan === 'pro_trial' && diffDays > trialDurationDays) {
-          console.log('⬇️ [AuthContext] Essai expiré -> free.');
-          const { error: downgradeError } = await supabase
-              .from('users')
-              .update({ current_plan: 'free', pro_trial_enabled: false })
-              .eq('id', session.user.id);
-          if (!downgradeError) {
-              if (finalUserData) {
-                  finalUserData.current_plan = 'free';
-                  finalUserData.pro_trial_enabled = false;
-              }
-          }
+        console.log('⬇️ [AuthContext] Essai expiré -> free.');
+        const { error: downgradeError } = await supabase
+          .from('users')
+          .update({ current_plan: 'free', pro_trial_enabled: false })
+          .eq('id', session.user.id);
+        if (!downgradeError) {
+          finalUserData.current_plan = 'free';
+          finalUserData.pro_trial_enabled = false;
+        }
       }
-  
-      const isProOrTrialUser =
-          finalUserData?.pro_subscription_active || finalUserData?.current_plan === 'pro' || isTrialPeriod;
-  
-      const newUser: User = {
-          ...session.user,
-          ...finalUserData,
-          isProOrTrial: isProOrTrialUser,
-          subscription_plan: finalUserData?.current_plan,
-      };
-  
-      setState({ session, user: newUser, loading: false });
 
+      const isProOrTrialUser =
+        finalUserData?.pro_subscription_active || finalUserData?.current_plan === 'pro' || isTrialPeriod;
+      const newUser: User = {
+        ...session.user,
+        ...finalUserData,
+        isProOrTrial: isProOrTrialUser,
+        subscription_plan: finalUserData?.current_plan,
+      };
+
+      setState({ session, user: newUser, loading: false });
     } catch (error) {
       console.error('❌ [AuthContext] Exception lors de la mise à jour:', error);
       setState((prev) => ({ ...prev, user: null, loading: false }));
@@ -202,13 +187,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (isMounted) {
-          if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'PASSWORD_RECOVERY') {
-            updateUserState(session);
+          // Gérer la redirection ici
+          if (event === 'SIGNED_IN' && window.location.pathname === '/login') {
+            window.location.replace('/dashboard');
+          } else if (event === 'SIGNED_OUT' && window.location.pathname !== '/login') {
+            window.location.replace('/login');
           }
+          // Lancer la mise à jour de l'état utilisateur
+          updateUserState(session);
         }
       }
     );
 
+    // Charger la session initiale
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (isMounted) {
         updateUserState(session);
