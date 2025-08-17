@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { FaBars, FaTimes } from 'react-icons/fa';
+import { FaBars } from 'react-icons/fa';
+import { FaTimes } from 'react-icons/fa';
 import { IoIosArrowUp } from "react-icons/io";
 import { useState } from 'react';
 import Footer from './Footer';
