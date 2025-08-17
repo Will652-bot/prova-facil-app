@@ -39,7 +39,7 @@ import VerifyOtpPage from './pages/verify-otp';
 import SobrePage from './pages/SobrePage';
 import PlanosPage from './pages/PlanosPage';
 import TermosUsoPage from './pages/TermosPage';
-import PoliticaPrivacidadePage from './pages/PoliticaPrivacidadePage';
+import PoliticaPrivacidadePage from './pages/PrivacidadePage';
 import ContatoPage from './pages/ContatoPage';
 
 const App: React.FC = () => {
@@ -52,7 +52,7 @@ const App: React.FC = () => {
           <Route path="/sobre" element={<SobrePage />} />
           <Route path="/planos" element={<PlanosPage />} />
           <Route path="/termos-de-uso" element={<TermosPage />} />
-          <Route path="/politica-de-privacidade" element={<PoliticaPrivacidadePage />} />
+          <Route path="/politica-de-privacidade" element={<PrivacidadePage />} />
           <Route path="/contato" element={<ContatoPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
