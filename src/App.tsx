@@ -35,8 +35,8 @@ import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
 // Imports des nouvelles pages publiques
 import SobrePage from './pages/SobrePage';
 import PlanosPage from './pages/PlanosPage';
-import TermosPage from './pages/TermosPage'; // Correction du nom d'importation
-import PoliticaPrivacidadePage from './pages/PoliticaPrivacidadePage';
+import TermosPage from './pages/TermosPage';
+import PrivacidadePage from './pages/PrivacidadePage'; // Correction du nom d'importation
 import ContatoPage from './pages/ContatoPage';
 
 const App: React.FC = () => {
@@ -50,8 +50,8 @@ const App: React.FC = () => {
           
           <Route path="/sobre" element={<SobrePage />} />
           <Route path="/planos" element={<PlanosPage />} />
-          <Route path="/termos-de-uso" element={<TermosPage />} /> {/* Utilisation du composant corrigé */}
-          <Route path="/politica-de-privacidade" element={<PoliticaPrivacidadePage />} />
+          <Route path="/termos-de-uso" element={<TermosPage />} />
+          <Route path="/politica-de-privacidade" element={<PrivacidadePage />} /> {/* Utilisation du composant corrigé */}
           <Route path="/contato" element={<ContatoPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
