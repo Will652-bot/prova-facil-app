@@ -32,8 +32,7 @@
     "xlsx": "^0.18.5",
     "zustand": "^4.5.2",
     "dayjs": "^1.11.10",
-    "react-icons": "^4.10.1" // Vérifie la version la plus récente
-
+    "react-icons": "^4.10.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
