@@ -38,48 +38,51 @@ import PlanosPage from './pages/PlanosPage';
 import TermosPage from './pages/TermosPage';
 import PrivacidadePage from './pages/PrivacidadePage';
 import ContatoPage from './pages/ContatoPage';
-// >>> Correction de l'importation de VerifyOtpPage pour qu'elle corresponde au nom de fichier
 import VerifyOtpPage from './pages/verify-otp';
+
+// Composant de mise en page pour les pages publiques
+import LayoutPublic from './components/layout/LayoutPublic'; 
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Rotas publiques */}
-          {/* Page d'accueil est la page de connexion */}
-          <Route path="/" element={<LoginPage />} />
-          
-          <Route path="/sobre" element={<SobrePage />} />
-          <Route path="/planos" element={<PlanosPage />} />
-          <Route path="/termos-de-uso" element={<TermosPage />} />
-          <Route path="/politica-de-privacidade" element={<PrivacidadePage />} />
-          <Route path="/contato" element={<ContatoPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/check-email" element={<CheckEmailPage />} />
-          <Route path="/verify" element={<VerifyEmailPage />} />
-          <Route path="/verify-email" element={<VerifyEmailPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/request-password-reset" element={<RequestPasswordResetPage />} />
-          <Route path="/debug-auth" element={<DebugAuthPage />} />
-          <Route path="/update-password" element={<UpdatePasswordPage />} />
-          <Route path="/verify-otp" element={<VerifyOtpPage />} />
-          <Route path="/payment-success" element={<PaymentSuccessPage />} />
-          <Route path="/sucesso" element={<PaymentSuccessPage />} />
-          <Route path="/payment-cancel" element={<PaymentCancelPage />} />
-          <Route path="/cancelado" element={<PaymentCancelPage />} />
+          {/* Mise en page pour les routes publiques avec le pied de page inclus */}
+          <Route path="/" element={<LayoutPublic />}>
+            {/* Pages publiques accessibles à tous */}
+            <Route index element={<LoginPage />} />
+            <Route path="sobre" element={<SobrePage />} />
+            <Route path="planos" element={<PlanosPage />} />
+            <Route path="termos-de-uso" element={<TermosPage />} />
+            <Route path="politica-de-privacidade" element={<PrivacidadePage />} />
+            <Route path="contato" element={<ContatoPage />} />
+            <Route path="login" element={<LoginPage />} />
+            <Route path="register" element={<RegisterPage />} />
+            <Route path="check-email" element={<CheckEmailPage />} />
+            <Route path="verify" element={<VerifyEmailPage />} />
+            <Route path="verify-email" element={<VerifyEmailPage />} />
+            <Route path="reset-password" element={<ResetPasswordPage />} />
+            <Route path="request-password-reset" element={<RequestPasswordResetPage />} />
+            <Route path="debug-auth" element={<DebugAuthPage />} />
+            <Route path="update-password" element={<UpdatePasswordPage />} />
+            <Route path="verify-otp" element={<VerifyOtpPage />} />
+            <Route path="payment-success" element={<PaymentSuccessPage />} />
+            <Route path="sucesso" element={<PaymentSuccessPage />} />
+            <Route path="payment-cancel" element={<PaymentCancelPage />} />
+            <Route path="cancelado" element={<PaymentCancelPage />} />
+          </Route>
 
-          {/* Rotas protegidas */}
+          {/* Rotas protégées (utilisant le Layout classique) */}
           <Route
-            path="/"
+            path="/app"
             element={
               <ProtectedRoute>
                 <Layout />
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route index element={<Navigate to="/app/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="classes" element={<ClassesPage />} />
             <Route path="classes/new" element={<ClassFormPage />} />
