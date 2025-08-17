@@ -32,14 +32,11 @@ import SettingsPage from './pages/SettingsPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
 
-// >>> NOUVEL IMPORT : Importez votre nouvelle page VerifyOtpPage
-import VerifyOtpPage from './pages/verify-otp';
-
 // Imports des nouvelles pages publiques
 import SobrePage from './pages/SobrePage';
 import PlanosPage from './pages/PlanosPage';
-import TermosUsoPage from './pages/TermosPage';
-import PoliticaPrivacidadePage from './pages/PrivacidadePage';
+import TermosUsoPage from './pages/TermosUsoPage';
+import PoliticaPrivacidadePage from './pages/PoliticaPrivacidadePage';
 import ContatoPage from './pages/ContatoPage';
 
 const App: React.FC = () => {
@@ -47,12 +44,14 @@ const App: React.FC = () => {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Les routes publiques sont en dehors du ProtectedRoute */}
-          <Route path="/" element={<SobrePage />} />
+          {/* Rotas publiques */}
+          {/* Page d'accueil est la page de connexion */}
+          <Route path="/" element={<LoginPage />} />
+          
           <Route path="/sobre" element={<SobrePage />} />
           <Route path="/planos" element={<PlanosPage />} />
-          <Route path="/termos-de-uso" element={<TermosPage />} />
-          <Route path="/politica-de-privacidade" element={<PrivacidadePage />} />
+          <Route path="/termos-de-uso" element={<TermosUsoPage />} />
+          <Route path="/politica-de-privacidade" element={<PoliticaPrivacidadePage />} />
           <Route path="/contato" element={<ContatoPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -102,7 +101,7 @@ const App: React.FC = () => {
             <Route path="about" element={<AboutPage />} />
           </Route>
 
-          {/* Redirecionamento padrão para qualquer rota não encontrada */}
+          {/* Redirecionamento padrão pour n'importe quelle route non trouvée */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
         <SignupDebugPanel />
