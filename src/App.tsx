@@ -36,10 +36,10 @@ import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
 import SobrePage from './pages/SobrePage';
 import PlanosPage from './pages/PlanosPage';
 import TermosPage from './pages/TermosPage';
-import PrivacidadePage from './pages/PrivacidadePage'; // Correction du nom d'importation
+import PrivacidadePage from './pages/PrivacidadePage';
 import ContatoPage from './pages/ContatoPage';
-// >>> Correction de l'importation de VerifyOtpPage
-import VerifyOtpPage from './pages/VerifyOtpPage'; // Assurez-vous que le nom du fichier est "VerifyOtpPage.tsx"
+// >>> Correction de l'importation de VerifyOtpPage pour qu'elle corresponde au nom de fichier
+import VerifyOtpPage from './pages/verify-otp';
 
 const App: React.FC = () => {
   return (
@@ -49,6 +49,7 @@ const App: React.FC = () => {
           {/* Rotas publiques */}
           {/* Page d'accueil est la page de connexion */}
           <Route path="/" element={<LoginPage />} />
+          
           <Route path="/sobre" element={<SobrePage />} />
           <Route path="/planos" element={<PlanosPage />} />
           <Route path="/termos-de-uso" element={<TermosPage />} />
