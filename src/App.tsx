@@ -38,7 +38,7 @@ import VerifyOtpPage from './pages/verify-otp';
 // Imports des nouvelles pages publiques
 import SobrePage from './pages/SobrePage';
 import PlanosPage from './pages/PlanosPage';
-import TermosUsoPage from './pages/TermosUsoPage';
+import TermosUsoPage from './pages/TermosPage';
 import PoliticaPrivacidadePage from './pages/PoliticaPrivacidadePage';
 import ContatoPage from './pages/ContatoPage';
 
@@ -51,7 +51,7 @@ const App: React.FC = () => {
           <Route path="/" element={<SobrePage />} />
           <Route path="/sobre" element={<SobrePage />} />
           <Route path="/planos" element={<PlanosPage />} />
-          <Route path="/termos-de-uso" element={<TermosUsoPage />} />
+          <Route path="/termos-de-uso" element={<TermosPage />} />
           <Route path="/politica-de-privacidade" element={<PoliticaPrivacidadePage />} />
           <Route path="/contato" element={<ContatoPage />} />
           <Route path="/login" element={<LoginPage />} />
