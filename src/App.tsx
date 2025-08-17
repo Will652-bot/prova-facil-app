@@ -33,32 +33,37 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
 
 // >>> NOUVEL IMPORT : Importez votre nouvelle page VerifyOtpPage
-import VerifyOtpPage from './pages/verify-otp'; // Assurez-vous que le nom est exact (par défaut ou nommé)
+import VerifyOtpPage from './pages/verify-otp';
+
+// Imports des nouvelles pages publiques
+import SobrePage from './pages/SobrePage';
+import PlanosPage from './pages/PlanosPage';
+import TermosUsoPage from './pages/TermosUsoPage';
+import PoliticaPrivacidadePage from './pages/PoliticaPrivacidadePage';
+import ContatoPage from './pages/ContatoPage';
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-
-          {/* Rotas públicas */}
+          {/* Les routes publiques sont en dehors du ProtectedRoute */}
+          <Route path="/" element={<SobrePage />} />
+          <Route path="/sobre" element={<SobrePage />} />
+          <Route path="/planos" element={<PlanosPage />} />
+          <Route path="/termos-de-uso" element={<TermosUsoPage />} />
+          <Route path="/politica-de-privacidade" element={<PoliticaPrivacidadePage />} />
+          <Route path="/contato" element={<ContatoPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/check-email" element={<CheckEmailPage />} />
-          {/* Manter as rotas /verify e /verify-email por enquanto,
-              mas elas podem se tornar redundantes ou precisar de ajustes futuros
-              se o fluxo de verificação for APENAS via OTP. */}
           <Route path="/verify" element={<VerifyEmailPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/request-password-reset" element={<RequestPasswordResetPage />} />
           <Route path="/debug-auth" element={<DebugAuthPage />} />
           <Route path="/update-password" element={<UpdatePasswordPage />} />
-
-          {/* >>> NOVA ROTA PARA VERIFICAÇÃO OTP <<< */}
           <Route path="/verify-otp" element={<VerifyOtpPage />} />
-
-          {/* Rotas de redirecionamento do Stripe – português e inglês */}
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/sucesso" element={<PaymentSuccessPage />} />
           <Route path="/payment-cancel" element={<PaymentCancelPage />} />
@@ -100,8 +105,6 @@ const App: React.FC = () => {
           {/* Redirecionamento padrão para qualquer rota não encontrada */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-
-        {/* Painel de depuração - visível apenas em desenvolvimento ou para admin */}
         <SignupDebugPanel />
       </Router>
     </AuthProvider>
