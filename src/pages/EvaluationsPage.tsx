@@ -163,7 +163,7 @@ export const EvaluationsPage: React.FC = () => {
   const handleEditClick = (evaluation: any) => {
     // Navigates to the EvaluationFormPage with the ID of one evaluation from the group.
     // The EvaluationFormPage then fetches all related evaluations for that group.
-    navigate(`/app/evaluations/${evaluation.id}/edit`);
+    navigate(`/evaluations/${evaluation.id}/edit`);
   };
 
   return (
@@ -177,7 +177,7 @@ export const EvaluationsPage: React.FC = () => {
         </div>
         <div className="mt-4 sm:mt-0">
           <Button
-            onClick={() => navigate('/app/evaluations/new')}
+            onClick={() => navigate('/evaluations/new')}
             leftIcon={<Plus className="h-4 w-4" />}
           >
             Nova Avaliação
@@ -220,7 +220,7 @@ export const EvaluationsPage: React.FC = () => {
               variant="outline"
               size="sm"
               className="mt-4"
-              onClick={() => navigate('/app/evaluations/new')}
+              onClick={() => navigate('/evaluations/new')}
               leftIcon={<Plus className="h-4 w-4" />}
             >
               Criar Avaliação
@@ -301,7 +301,7 @@ export const EvaluationsPage: React.FC = () => {
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
         title="Excluir Avaliação"
-        message={`Tem certeza que deseja excluir a avaliação "${confirmDialog.evaluationTitle}"? Isso excluirá todas as avaliações associées à este aluno também serão excluídas.`}
+        message={`Tem certeza que deseja excluir a avaliação "${confirmDialog.evaluationTitle}"? Isso excluirá todas as avaliações associadas.`}
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmDialog({ isOpen: false, evaluationId: '', evaluationTitle: '', groupInfo: null })}
       />
