@@ -35,10 +35,11 @@ const Footer = () => {
             </p>
           </div>
           <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6">
+            {/* Les liens ont été mis à jour pour correspondre aux routes de App.tsx */}
             <Link to="/sobre" className="hover:underline text-sm text-gray-600">Sobre</Link>
             <Link to="/planos" className="hover:underline text-sm text-gray-600">Planos</Link>
-            <Link to="/termos-de-uso" className="hover:underline text-sm text-gray-600">Termos de Uso</Link>
-            <Link to="/politica-de-privacidade" className="hover:underline text-sm text-gray-600">Política de Privacidade</Link>
+            <Link to="/termos" className="hover:underline text-sm text-gray-600">Termos de Uso</Link>
+            <Link to="/privacidade" className="hover:underline text-sm text-gray-600">Política de Privacidade</Link>
             <Link to="/contato" className="hover:underline text-sm text-gray-600">Contato</Link>
           </div>
         </div>
