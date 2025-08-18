@@ -64,7 +64,7 @@ export const StudentFormPage: React.FC = () => {
     } catch (error) {
       console.error('Error fetching student data:', error);
       toast.error('Erro ao carregar dados do aluno');
-      navigate(`/classes/${classId || ''}/students`); // Redirige de manière sécurisée
+      navigate(`/app/classes/${classId || ''}/students`); // Redirige de manière sécurisée
     }
   };
 
@@ -156,7 +156,7 @@ export const StudentFormPage: React.FC = () => {
       }
 
       // Redirige vers la liste des étudiants de la classe sélectionnée
-      navigate(`/classes/${selectedClassId || classId}/students`);
+      navigate(`/app/classes/${selectedClassId || classId}/students`);
     } catch (error) {
       console.error('Error saving student:', error);
       toast.error('Erro ao salvar aluno');
@@ -256,7 +256,7 @@ export const StudentFormPage: React.FC = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate(`/classes/${formData.selectedClassId || classId || ''}/students`)} // Retourne à la liste des étudiants de la classe sélectionnée ou à la page des classes
+              onClick={() => navigate(`/app/classes/${formData.selectedClassId || classId || ''}/students`)} // Retourne à la liste des étudiants de la classe sélectionnée ou à la page des classes
             >
               Cancelar
             </Button>
