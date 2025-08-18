@@ -64,9 +64,7 @@ export const StudentFormPage: React.FC = () => {
     } catch (error) {
       console.error('Error fetching student data:', error);
       toast.error('Erro ao carregar dados do aluno');
-      // CORRECTION V3: Gérer la redirection de manière plus robuste
-      const fallbackPath = classId ? `/app/classes/${classId}/students` : '/app/classes';
-      navigate(fallbackPath);
+      navigate(`/classes/${classId || ''}/students`); // Redirige de manière sécurisée
     }
   };
 
@@ -157,9 +155,8 @@ export const StudentFormPage: React.FC = () => {
         toast.success('Aluno cadastrado com sucesso');
       }
 
-      // CORRECTION V3: Rediriger de manière plus robuste
-      const redirectTo = `/app/classes/${selectedClassId || classId}/students`;
-      navigate(redirectTo);
+      // Redirige vers la liste des étudiants de la classe sélectionnée
+      navigate(`/classes/${selectedClassId || classId}/students`);
     } catch (error) {
       console.error('Error saving student:', error);
       toast.error('Erro ao salvar aluno');
@@ -259,11 +256,7 @@ export const StudentFormPage: React.FC = () => {
             <Button
               type="button"
               variant="outline"
-              // CORRECTION V3: Utiliser la même logique de redirection que handleSubmit
-              onClick={() => {
-                  const redirectTo = `/app/classes/${formData.selectedClassId || classId}/students`;
-                  navigate(redirectTo);
-              }}
+              onClick={() => navigate(`/classes/${formData.selectedClassId || classId || ''}/students`)} // Retourne à la liste des étudiants de la classe sélectionnée ou à la page des classes
             >
               Cancelar
             </Button>
