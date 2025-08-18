@@ -26,8 +26,8 @@ import { EvaluationsPage } from './pages/EvaluationsPage';
 import { EvaluationFormPage } from './pages/EvaluationFormPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { ConditionalFormattingPage } from './pages/ConditionalFormattingPage';
-import { PlansPage } from './pages/PlansPage'; // PlansPage for authenticated users
-import { AboutPage } from './pages/AboutPage'; // AboutPage for authenticated users
+import { PlansPage } from './pages/PlansPage'; // PlansPage pour les utilisateurs connectés
+import { AboutPage } from './pages/AboutPage'; // AboutPage pour les utilisateurs connectés
 import SettingsPage from './pages/SettingsPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
@@ -104,6 +104,10 @@ const App: React.FC = () => {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="plans" element={<PlansPage />} />
             <Route path="about" element={<AboutPage />} />
+            {/* Ajout des routes publiques dans le bloc protégé pour les utilisateurs connectés */}
+            <Route path="termos" element={<PublicTermsPage />} />
+            <Route path="privacidade" element={<PublicPrivacyPage />} />
+            <Route path="contato" element={<PublicContactPage />} />
           </Route>
 
           {/* Redirections pour les routes non trouvées. */}
