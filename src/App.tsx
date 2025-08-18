@@ -1,7 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
 import { AuthProvider } from './contexts/AuthContext';
 
+// Auth & utilitaires (public)
 import LoginPage from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { CheckEmailPage } from './pages/CheckEmailPage';
@@ -10,12 +12,14 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { RequestPasswordResetPage } from './pages/RequestPasswordResetPage';
 import { DebugAuthPage } from './pages/DebugAuthPage';
 import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
+import VerifyOtpPage from './pages/verify-otp';
 
+// Stripe redirects (public)
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
 
+// Layout privé + routes métier
 import { Layout } from './components/layout/Layout';
-
 import { DashboardPage } from './pages/DashboardPage';
 import { ClassesPage } from './pages/ClassesPage';
 import { ClassFormPage } from './pages/ClassFormPage';
@@ -30,22 +34,23 @@ import { EvaluationsPage } from './pages/EvaluationsPage';
 import { EvaluationFormPage } from './pages/EvaluationFormPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { ConditionalFormattingPage } from './pages/ConditionalFormattingPage';
-import { PlansPage } from './pages/PlansPage';     // pages internes (connecté)
-import { AboutPage } from './pages/AboutPage';     // pages internes (connecté)
+import { PlansPage } from './pages/PlansPage';   // pages internes (connecté)
+import { AboutPage } from './pages/AboutPage';   // pages internes (connecté)
 import SettingsPage from './pages/SettingsPage';
 
+// Garde d’auth
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+
+// Debug
 import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
 
-// PAGES PUBLIQUES (SEO / Footer)
+// Layout public + pages SEO (footer)
+import LayoutPublic from './components/layout/LayoutPublic';
 import PublicAboutPage from './pages/SobrePage';
 import PublicPlansPage from './pages/PlanosPage';
 import PublicTermsPage from './pages/TermosPage';
 import PublicPrivacyPage from './pages/PrivacidadePage';
 import PublicContactPage from './pages/ContatoPage';
-
-import VerifyOtpPage from './pages/verify-otp';
-import LayoutPublic from './components/layout/LayoutPublic';
 
 const App: React.FC = () => {
   return (
@@ -53,14 +58,17 @@ const App: React.FC = () => {
       <Router>
         <Routes>
           {/*
-            ----- PARTIE 1 : ROUTES PUBLIQUES (toujours accessibles) -----
-            On les rend via LayoutPublic (header/footer public).
+            ===== PARTIE 1 — ROUTES PUBLIQUES =====
+            - Accessibles même si l'utilisateur est connecté
+            - Servies via LayoutPublic (navbar/footer public)
           */}
           <Route element={<LayoutPublic />}>
-            {/* Auth & utilitaires */}
+            {/* Auth publiques */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/check-email" element={<CheckEmailPage />} />
+            {/* Garder /verify et /verify-email si nécessaire */}
+            <Route path="/verify" element={<VerifyEmailPage />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/request-password-reset" element={<RequestPasswordResetPage />} />
@@ -68,13 +76,13 @@ const App: React.FC = () => {
             <Route path="/update-password" element={<UpdatePasswordPage />} />
             <Route path="/verify-otp" element={<VerifyOtpPage />} />
 
-            {/* Stripe (pt/en) */}
+            {/* Stripe */}
             <Route path="/payment-success" element={<PaymentSuccessPage />} />
             <Route path="/sucesso" element={<PaymentSuccessPage />} />
             <Route path="/payment-cancel" element={<PaymentCancelPage />} />
             <Route path="/cancelado" element={<PaymentCancelPage />} />
 
-            {/* Pages SEO / Footer — accessibles connecté ou non */}
+            {/* Pages SEO / Footer — toujours accessibles */}
             <Route path="/planos" element={<PublicPlansPage />} />
             <Route path="/sobre" element={<PublicAboutPage />} />
             <Route path="/termos" element={<PublicTermsPage />} />
@@ -83,10 +91,10 @@ const App: React.FC = () => {
           </Route>
 
           {/*
-            ----- PARTIE 2 : ROUTES PROTÉGÉES (app métier) -----
-            Protégées via ProtectedRoute. Le Layout interne rend les sous-pages via <Outlet />.
-            IMPORTANT : on NE redéclare PAS /termos /privacidade /contato ici
-            pour éviter que le Layout privé n’écrase les pages publiques.
+            ===== PARTIE 2 — ROUTES PROTÉGÉES =====
+            - Nécessitent l'authentification
+            - Servies via Layout (navbar/footer privés) et <Outlet />
+            - ⚠️ On NE redéclare PAS /termos /privacidade /contato ici
           */}
           <Route
             path="/"
@@ -128,11 +136,11 @@ const App: React.FC = () => {
             <Route path="about" element={<AboutPage />} />
           </Route>
 
-          {/* Catch-all : renvoie vers le dashboard (ProtectedRoute redirigera vers /login si non connecté) */}
+          {/* Catch-all : vers /dashboard ; si non connecté, ProtectedRoute renverra /login */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
 
-        {/* Panneau de debug */}
+        {/* Debug panel global */}
         <SignupDebugPanel />
       </Router>
     </AuthProvider>
