@@ -247,7 +247,7 @@ export const EvaluationFormPage: React.FC = () => {
       if (singleFetchError) {
         console.error('Error fetching single evaluation record to identify group:', singleFetchError.message);
         toast.error('Avaliação não encontrada ou sem permissão.');
-        navigate('/app/evaluations');
+        navigate('/evaluations');
         return;
       }
 
@@ -296,7 +296,7 @@ export const EvaluationFormPage: React.FC = () => {
     } catch (error: any) {
       console.error('Error fetching evaluation group:', error.message);
       toast.error('Erro ao carregar avaliação. Redireccionando...');
-      navigate('/app/evaluations');
+      navigate('/evaluations');
     } finally {
       setLoading(false);
     }
@@ -323,13 +323,13 @@ export const EvaluationFormPage: React.FC = () => {
           } else {
             console.error("Erreur: isEditing est vrai mais l'ID de l'évaluation est manquant dans les paramètres de l'URL.");
             toast.error("Erro ao carregar avaliação: ID ausente.");
-            navigate('/app/evaluations');
+            navigate('/evaluations');
           }
         }
       } catch (err: any) {
         console.error("Erreur d'initialisation du formulário:", err.message);
         toast.error('Erro ao iniciar formulário.');
-        navigate('/app/evaluations');
+        navigate('/evaluations');
       } finally {
         setLoading(false);
       }
@@ -674,7 +674,7 @@ export const EvaluationFormPage: React.FC = () => {
       }
 
       toast.success(isEditing ? 'Avaliações atualizadas com sucesso' : 'Avaliações criadas com sucesso');
-      navigate('/app/evaluations');
+      navigate('/evaluations');
     } catch (error: any) {
       console.error('Error saving evaluations:', error.message);
       toast.error('Erro ao salvar avaliações');
@@ -727,10 +727,10 @@ export const EvaluationFormPage: React.FC = () => {
 
       const { error: deleteError } = await deleteQuery;
 
-      if (deleteError) throw deleteError;
+      if (deleteError) throw error;
 
       toast.success('Avaliação excluída com sucesso');
-      navigate('/app/evaluations');
+      navigate('/evaluations');
     } catch (error: any) {
       console.error('Error deleting evaluation:', error.message);
       toast.error('Erro ao excluir avaliação');
@@ -822,7 +822,6 @@ export const EvaluationFormPage: React.FC = () => {
                 value={selectedEvaluationTitleId}
                 onChange={(e) => setSelectedEvaluationTitleId(e.target.value)}
                 required
-                disabled={isEditing}
               >
                 <option value="">Selecione um título</option>
                 {evaluationTitles.map((title) => (
@@ -882,7 +881,7 @@ export const EvaluationFormPage: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     type="button"
-                    onClick={() => navigate('/app/criteria/new')}
+                    onClick={() => navigate('/criteria/new')}
                   >
                     Criar critère
                   </Button>
@@ -907,10 +906,10 @@ export const EvaluationFormPage: React.FC = () => {
                       PDF da Prova Anexado
                     </p>
                     <p className="text-xs text-blue-700">
-                      Turma: {attachedPDF.class?.name}
+                      {attachedPDF.file_path.split('/').pop()}
                     </p>
                     <p className="text-xs text-blue-600">
-                      Adicionado em: {attachedPDF.created_at ? new Date(attachedPDF.created_at).toLocaleDateString() : 'N/A'}
+                      Turma: {attachedPDF.class?.name}
                     </p>
                   </div>
                 </div>
@@ -961,7 +960,7 @@ export const EvaluationFormPage: React.FC = () => {
                     variant="outline"
                     size="sm"
                     className="mt-2"
-                    onClick={() => navigate(`/app/classes/${selectedClass}/students/new`)}
+                    onClick={() => navigate(`/classes/${selectedClass}/students/new`)}
                   >
                     Adicionar aluno
                   </Button>
@@ -1042,7 +1041,7 @@ export const EvaluationFormPage: React.FC = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate('/app/evaluations')}
+                onClick={() => navigate('/evaluations')}
               >
                 Cancelar
               </Button>
