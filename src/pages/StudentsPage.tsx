@@ -171,12 +171,12 @@ export const StudentsPage: React.FC = () => {
         <div className="mt-4 sm:mt-0 flex space-x-3">
           <Button
             variant="outline"
-            onClick={() => navigate('/classes')}
+            onClick={() => navigate('/app/classes')}
           >
             Voltar
           </Button>
           <Button
-            onClick={() => navigate(`/classes/${classId}/students/new`)}
+            onClick={() => navigate(`/app/classes/${classId}/students/new`)}
             leftIcon={<Plus className="h-4 w-4" />}
             disabled={!canAddMoreStudents} // Désactiver le bouton si la limite est atteinte et pas Pro/Trial
           >
@@ -231,7 +231,7 @@ export const StudentsPage: React.FC = () => {
               variant="outline"
               size="sm"
               className="mt-4"
-              onClick={() => navigate(`/classes/${classId}/students/new`)}
+              onClick={() => navigate(`/app/classes/${classId}/students/new`)}
               leftIcon={<Plus className="h-4 w-4" />}
               disabled={!canAddMoreStudents} // Désactiver le bouton ici aussi
             >
@@ -257,17 +257,17 @@ export const StudentsPage: React.FC = () => {
                     {student.first_name} {student.last_name}
                   </h3>
                   {/* Vous pouvez choisir d'afficher les nouvelles informations ici si pertinent pour cette vue.
-                      Par exemple:
-                      {student.birth_date && <p className="text-sm text-gray-600">Nascimento: {student.birth_date}</p>}
-                      {student.guardian_email && <p className="text-sm text-gray-600">Email Responsável: {student.guardian_email}</p>}
-                      {student.guardian_phone && <p className="text-sm text-gray-600">Telefone Responsável: {student.guardian_phone}</p>}
+                     Par exemple:
+                     {student.birth_date && <p className="text-sm text-gray-600">Nascimento: {student.birth_date}</p>}
+                     {student.guardian_email && <p className="text-sm text-gray-600">Email Responsável: {student.guardian_email}</p>}
+                     {student.guardian_phone && <p className="text-sm text-gray-600">Telefone Responsável: {student.guardian_phone}</p>}
                   */}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate(`/classes/${classId}/students/${student.id}/edit`)}
+                    onClick={() => navigate(`/app/classes/${classId}/students/${student.id}/edit`)}
                     leftIcon={<Edit className="h-4 w-4" />}
                   >
                     Editar
@@ -293,7 +293,7 @@ export const StudentsPage: React.FC = () => {
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
         title="Excluir Aluno"
-        message={`Tem certeza que deseja excluir o aluno "${confirmDialog.studentName}"? Todas as avaliações associadas a este aluno também serão excluídas.`}
+        message={`Tem certeza que deseja excluir o aluno "${confirmDialog.studentName}"? Todas as avaliações associées à este aluno também serão excluídas.`}
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmDialog({ isOpen: false, studentId: '', studentName: '' })}
       />
