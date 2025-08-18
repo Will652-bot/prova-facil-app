@@ -59,7 +59,7 @@ export const ClassesPage: React.FC = () => {
 
     console.log('✅ Utilisateur authentifié, récupération des classes...');
     fetchClasses();
-  }, [user?.id, authLoading]); // ✅ CORRECTION: Ajouter authLoading comme dépendance
+  }, [user?.id, authLoading]);
 
   const fetchClasses = async () => {
     // ✅ CORRECTION: Vérification de sécurité
@@ -228,7 +228,7 @@ export const ClassesPage: React.FC = () => {
         </div>
         <div className="mt-4 sm:mt-0">
           <Button
-            onClick={() => navigate('/classes/new')}
+            onClick={() => navigate('/app/classes/new')}
             leftIcon={<Plus className="h-4 w-4" />}
           >
             Nova Turma
@@ -287,7 +287,7 @@ export const ClassesPage: React.FC = () => {
                 variant="outline"
                 size="sm"
                 className="mt-4"
-                onClick={() => navigate('/classes/new')}
+                onClick={() => navigate('/app/classes/new')}
                 leftIcon={<Plus className="h-4 w-4" />}
               >
                 Criar primeira turma
@@ -320,7 +320,7 @@ export const ClassesPage: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => navigate(`/classes/${classItem.id}/students`)}
+                      onClick={() => navigate(`/app/classes/${classItem.id}/students`)}
                       leftIcon={<Users className="h-4 w-4" />}
                     >
                       Alunos
@@ -328,7 +328,7 @@ export const ClassesPage: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => navigate(`/classes/${classItem.id}/edit`)}
+                      onClick={() => navigate(`/app/classes/${classItem.id}/edit`)}
                       leftIcon={<Edit className="h-4 w-4" />}
                     >
                       Editar
