@@ -40,7 +40,7 @@ export const ClassFormPage: React.FC = () => {
       }
     } catch (error) {
       toast.error('Erro ao carregar dados da turma');
-      navigate('/classes');
+      navigate('/app/classes');
     }
   };
 
@@ -106,7 +106,7 @@ export const ClassFormPage: React.FC = () => {
         toast.success('Turma criada com sucesso');
       }
 
-      navigate('/classes');
+      navigate('/app/classes');
     } catch (error) {
       toast.error('Erro ao salvar turma');
     } finally {
@@ -141,7 +141,7 @@ export const ClassFormPage: React.FC = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('/classes')}
+              onClick={() => navigate('/app/classes')}
             >
               Cancelar
             </Button>
