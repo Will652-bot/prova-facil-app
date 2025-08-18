@@ -1,139 +1,92 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-
-// Pages d'authentification
-import LoginPage from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { CheckEmailPage } from './pages/CheckEmailPage';
-import { VerifyEmailPage } from './pages/VerifyEmailPage';
-import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { RequestPasswordResetPage } from './pages/RequestPasswordResetPage';
-import { DebugAuthPage } from './pages/DebugAuthPage';
-import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
-import VerifyOtpPage from './pages/verify-otp';
-
-// Paiement
-import PaymentSuccessPage from './pages/PaymentSuccessPage';
-import PaymentCancelPage from './pages/PaymentCancelPage';
-
-// Layouts
-import { Layout } from './components/layout/Layout';
-import LayoutPublic from './components/layout/LayoutPublic';
-
-// Pages privées (métier)
-import { DashboardPage } from './pages/DashboardPage';
-import { ClassesPage } from './pages/ClassesPage';
-import { ClassFormPage } from './pages/ClassFormPage';
-import { StudentsPage } from './pages/StudentsPage';
-import { AllStudentsPage } from './pages/AllStudentsPage';
-import { StudentFormPage } from './pages/StudentFormPage';
-import { CriteriaPage } from './pages/CriteriaPage';
-import { CriteriaFormPage } from './pages/CriteriaFormPage';
-import { EvaluationTitlesPage } from './pages/EvaluationTitlesPage';
-import { EvaluationCriteriaPage } from './pages/EvaluationCriteriaPage';
-import { EvaluationsPage } from './pages/EvaluationsPage';
-import { EvaluationFormPage } from './pages/EvaluationFormPage';
-import { ReportsPage } from './pages/ReportsPage';
-import { ConditionalFormattingPage } from './pages/ConditionalFormattingPage';
-import { PlansPage } from './pages/PlansPage';
-import { AboutPage } from './pages/AboutPage';
-import SettingsPage from './pages/SettingsPage';
+// src/App.tsx
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 // Pages publiques
-import SobrePage from './pages/SobrePage';
-import PlanosPage from './pages/PlanosPage';
-import TermosPage from './pages/TermosPage';
-import PrivacidadePage from './pages/PrivacidadePage';
-import ContatoPage from './pages/ContatoPage';
+import LoginPage from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
+import { CheckEmailPage } from "./pages/CheckEmailPage";
+import SobrePage from "./pages/SobrePage";
+import PlanosPage from "./pages/PlanosPage";
+import TermosPage from "./pages/TermosPage";
+import PrivacidadePage from "./pages/PrivacidadePage";
+import ContatoPage from "./pages/ContatoPage";
 
-// Composants utilitaires
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
+// Pages protégées
+import DashboardPage from "./pages/DashboardPage";
+import SettingsPage from "./pages/SettingsPage";
+import EvaluationFormPage from "./pages/EvaluationFormPage";
+import EvaluationTitlesPage from "./pages/EvaluationTitlesPage";
 
-// --- Redirection conditionnelle ---
-const AuthConditionalRedirect: React.FC = () => {
-  const { user } = useAuth();
-  return user ? <Navigate to="/app/dashboard" replace /> : <Navigate to="/login" replace />;
-};
+// 🔒 Wrapper pour routes protégées
+function PrivateRoute({ children }: { children: JSX.Element }) {
+  const { user, loading } = useAuth();
 
-const App: React.FC = () => {
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center">Carregando...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+export default function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Routes publiques avec LayoutPublic */}
-          <Route path="/" element={<LayoutPublic />}>
-            <Route index element={<AuthConditionalRedirect />} />
+          {/* Routes publiques */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/check-email" element={<CheckEmailPage />} />
+          <Route path="/sobre" element={<SobrePage />} />
+          <Route path="/planos" element={<PlanosPage />} />
+          <Route path="/termos" element={<TermosPage />} />
+          <Route path="/privacidade" element={<PrivacidadePage />} />
+          <Route path="/contato" element={<ContatoPage />} />
 
-            {/* Pages publiques */}
-            <Route path="sobre" element={<SobrePage />} />
-            <Route path="planos" element={<PlanosPage />} />
-            <Route path="termos-de-uso" element={<TermosPage />} />
-            <Route path="politica-de-privacidade" element={<PrivacidadePage />} />
-            <Route path="contato" element={<ContatoPage />} />
-
-            {/* Auth */}
-            <Route path="login" element={<LoginPage />} />
-            <Route path="register" element={<RegisterPage />} />
-            <Route path="check-email" element={<CheckEmailPage />} />
-            <Route path="verify" element={<VerifyEmailPage />} />
-            <Route path="verify-email" element={<VerifyEmailPage />} />
-            <Route path="reset-password" element={<ResetPasswordPage />} />
-            <Route path="request-password-reset" element={<RequestPasswordResetPage />} />
-            <Route path="debug-auth" element={<DebugAuthPage />} />
-            <Route path="update-password" element={<UpdatePasswordPage />} />
-            <Route path="verify-otp" element={<VerifyOtpPage />} />
-
-            {/* Paiement */}
-            <Route path="payment-success" element={<PaymentSuccessPage />} />
-            <Route path="sucesso" element={<PaymentSuccessPage />} />
-            <Route path="payment-cancel" element={<PaymentCancelPage />} />
-            <Route path="cancelado" element={<PaymentCancelPage />} />
-          </Route>
-
-          {/* Routes privées protégées */}
+          {/* Routes protégées */}
           <Route
-            path="/app"
+            path="/"
             element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
+              <PrivateRoute>
+                <DashboardPage />
+              </PrivateRoute>
             }
-          >
-            <Route index element={<Navigate to="/app/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="classes" element={<ClassesPage />} />
-            <Route path="classes/new" element={<ClassFormPage />} />
-            <Route path="classes/:id/edit" element={<ClassFormPage />} />
-            <Route path="classes/:classId/students" element={<StudentsPage />} />
-            <Route path="students" element={<AllStudentsPage />} />
-            <Route path="classes/:classId/students/new" element={<StudentFormPage />} />
-            <Route path="classes/:classId/students/:id/edit" element={<StudentFormPage />} />
-            <Route path="criteria" element={<CriteriaPage />} />
-            <Route path="criteria/new" element={<CriteriaFormPage />} />
-            <Route path="criteria/:id/edit" element={<CriteriaFormPage />} />
-            <Route path="evaluation-titles" element={<EvaluationTitlesPage />} />
-            <Route path="evaluation-criteria" element={<EvaluationCriteriaPage />} />
-            <Route path="formatting" element={<ConditionalFormattingPage />} />
-            <Route path="evaluations" element={<EvaluationsPage />} />
-            <Route path="evaluations/new" element={<EvaluationFormPage />} />
-            <Route path="evaluations/:id/edit" element={<EvaluationFormPage />} />
-            <Route path="reports" element={<ReportsPage />} />
-            <Route path="plans" element={<PlansPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="about" element={<AboutPage />} />
-          </Route>
+          />
+          <Route
+            path="/settings"
+            element={
+              <PrivateRoute>
+                <SettingsPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/evaluation-form"
+            element={
+              <PrivateRoute>
+                <EvaluationFormPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/evaluation-titles"
+            element={
+              <PrivateRoute>
+                <EvaluationTitlesPage />
+              </PrivateRoute>
+            }
+          />
 
-          {/* Catch-all */}
+          {/* Redirection par défaut */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-
-        {/* Debug panel (affiché partout, pratique pour dev) */}
-        <SignupDebugPanel />
       </Router>
     </AuthProvider>
   );
-};
-
-export default App;
+}
