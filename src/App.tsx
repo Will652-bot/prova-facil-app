@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+// Pages d'authentification
 import LoginPage from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { CheckEmailPage } from './pages/CheckEmailPage';
@@ -9,9 +11,17 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { RequestPasswordResetPage } from './pages/RequestPasswordResetPage';
 import { DebugAuthPage } from './pages/DebugAuthPage';
 import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
+import VerifyOtpPage from './pages/verify-otp';
+
+// Paiement
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
+
+// Layouts
 import { Layout } from './components/layout/Layout';
+import LayoutPublic from './components/layout/LayoutPublic';
+
+// Pages privées (métier)
 import { DashboardPage } from './pages/DashboardPage';
 import { ClassesPage } from './pages/ClassesPage';
 import { ClassFormPage } from './pages/ClassFormPage';
@@ -29,25 +39,22 @@ import { ConditionalFormattingPage } from './pages/ConditionalFormattingPage';
 import { PlansPage } from './pages/PlansPage';
 import { AboutPage } from './pages/AboutPage';
 import SettingsPage from './pages/SettingsPage';
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
 
-// Imports des nouvelles pages publiques
+// Pages publiques
 import SobrePage from './pages/SobrePage';
 import PlanosPage from './pages/PlanosPage';
 import TermosPage from './pages/TermosPage';
 import PrivacidadePage from './pages/PrivacidadePage';
 import ContatoPage from './pages/ContatoPage';
-import VerifyOtpPage from './pages/verify-otp';
 
-// Composant de mise en page pour les pages publiques
-import LayoutPublic from './components/layout/LayoutPublic';
+// Composants utilitaires
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
 
-// Nouveau composant pour gérer la redirection conditionnelle au niveau de la route principale
+// --- Redirection conditionnelle ---
 const AuthConditionalRedirect: React.FC = () => {
   const { user } = useAuth();
-  // Si l'utilisateur est connecté, le rediriger vers le dashboard, sinon afficher la page de login
-  return user ? <Navigate to="/app/dashboard" replace /> : <LoginPage />;
+  return user ? <Navigate to="/app/dashboard" replace /> : <Navigate to="/login" replace />;
 };
 
 const App: React.FC = () => {
@@ -55,16 +62,18 @@ const App: React.FC = () => {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Mise en page pour les routes publiques avec le pied de page inclus */}
+          {/* Routes publiques avec LayoutPublic */}
           <Route path="/" element={<LayoutPublic />}>
-            {/* La route index utilise notre nouveau composant de redirection conditionnelle */}
             <Route index element={<AuthConditionalRedirect />} />
-            {/* Autres pages publiques */}
+
+            {/* Pages publiques */}
             <Route path="sobre" element={<SobrePage />} />
             <Route path="planos" element={<PlanosPage />} />
             <Route path="termos-de-uso" element={<TermosPage />} />
             <Route path="politica-de-privacidade" element={<PrivacidadePage />} />
             <Route path="contato" element={<ContatoPage />} />
+
+            {/* Auth */}
             <Route path="login" element={<LoginPage />} />
             <Route path="register" element={<RegisterPage />} />
             <Route path="check-email" element={<CheckEmailPage />} />
@@ -75,13 +84,15 @@ const App: React.FC = () => {
             <Route path="debug-auth" element={<DebugAuthPage />} />
             <Route path="update-password" element={<UpdatePasswordPage />} />
             <Route path="verify-otp" element={<VerifyOtpPage />} />
+
+            {/* Paiement */}
             <Route path="payment-success" element={<PaymentSuccessPage />} />
             <Route path="sucesso" element={<PaymentSuccessPage />} />
             <Route path="payment-cancel" element={<PaymentCancelPage />} />
             <Route path="cancelado" element={<PaymentCancelPage />} />
           </Route>
 
-          {/* Rotas protégées (utilisant le Layout classique) */}
+          {/* Routes privées protégées */}
           <Route
             path="/app"
             element={
@@ -114,9 +125,11 @@ const App: React.FC = () => {
             <Route path="about" element={<AboutPage />} />
           </Route>
 
-          {/* Redirection vers la page d'accueil pour toute route non reconnue */}
+          {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+
+        {/* Debug panel (affiché partout, pratique pour dev) */}
         <SignupDebugPanel />
       </Router>
     </AuthProvider>
