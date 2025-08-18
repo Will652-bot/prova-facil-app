@@ -33,45 +33,45 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
 
 // >>> NOUVEL IMPORT : Importez votre nouvelle page VerifyOtpPage
-import VerifyOtpPage from './pages/verify-otp'; // Assurez-vous que le nom est exact (par défaut ou nommé)
+import VerifyOtpPage from './pages/verify-otp';
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-
-          {/* Rotas públicas */}
+          {/*
+            PARTIE 1 : Routes publiques.
+            Elles ne sont PAS protégées par AuthContext ou ProtectedRoute.
+            Le layout pour ces pages est minimal ou inexistant.
+          */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/check-email" element={<CheckEmailPage />} />
-          {/* Manter as rotas /verify e /verify-email por enquanto,
-              mas elas podem se tornar redundantes ou precisar de ajustes futuros
-              se o fluxo de verificação for APENAS via OTP. */}
-          <Route path="/verify" element={<VerifyEmailPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/request-password-reset" element={<RequestPasswordResetPage />} />
           <Route path="/debug-auth" element={<DebugAuthPage />} />
           <Route path="/update-password" element={<UpdatePasswordPage />} />
-
-          {/* >>> NOVA ROTA PARA VERIFICAÇÃO OTP <<< */}
           <Route path="/verify-otp" element={<VerifyOtpPage />} />
-
-          {/* Rotas de redirecionamento do Stripe – português e inglês */}
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/sucesso" element={<PaymentSuccessPage />} />
           <Route path="/payment-cancel" element={<PaymentCancelPage />} />
           <Route path="/cancelado" element={<PaymentCancelPage />} />
+          {/* Les pages "publiques" qui ont été perdues */}
+          <Route path="/plans" element={<PlansPage />} />
+          <Route path="/about" element={<AboutPage />} />
 
-          {/* Rotas protegidas */}
+          {/*
+            PARTIE 2 : Routes protégées.
+            Toutes les routes métiers sont imbriquées dans un seul <Route> parent.
+            L'element de ce parent est le ProtectedRoute, qui vérifie l'authentification.
+            Le <Layout /> est rendu à l'intérieur de ce <ProtectedRoute>, et il contient
+            un <Outlet /> qui affichera la page métier correcte.
+          */}
           <Route
             path="/"
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
+            element={<ProtectedRoute><Layout /></ProtectedRoute>}
           >
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
@@ -92,16 +92,15 @@ const App: React.FC = () => {
             <Route path="evaluations/new" element={<EvaluationFormPage />} />
             <Route path="evaluations/:id/edit" element={<EvaluationFormPage />} />
             <Route path="reports" element={<ReportsPage />} />
-            <Route path="plans" element={<PlansPage />} />
             <Route path="settings" element={<SettingsPage />} />
-            <Route path="about" element={<AboutPage />} />
           </Route>
 
-          {/* Redirecionamento padrão para qualquer rota não encontrada */}
+          {/* Redirection standard pour toute route non trouvée.
+            Note: Cette route redirigera vers le dashboard, qui est une route protégée.
+            Si l'utilisateur n'est pas authentifié, il sera ensuite redirigé vers /login.
+          */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-
-        {/* Painel de depuração - visível apenas em desenvolvimento ou para admin */}
         <SignupDebugPanel />
       </Router>
     </AuthProvider>
