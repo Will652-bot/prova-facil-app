@@ -32,11 +32,8 @@ import SettingsPage from './pages/SettingsPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
 
-// IMPORTATION CORRIGÉE : Assurez-vous d'importer le bon composant OTP
-// La capture d'écran a montré que VerifyOtpPage n'était pas défini.
-// Cela est dû à un problème dans l'importation.
-// Je vais supposer le nom de fichier correct, qui est généralement 'VerifyOtpPage' ou similaire.
-import { VerifyOtpPage } from './pages/VerifyOtpPage';
+// IMPORTATION CORRIGÉE : Le composant correct est 'verify-otp' et non 'VerifyOtpPage'
+import VerifyOtpPage from './pages/verify-otp';
 
 // Importez les pages publiques pour le footer
 import PublicPlansPage from './pages/PlanosPage'; // Public page for plans
