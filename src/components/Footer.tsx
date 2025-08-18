@@ -29,7 +29,11 @@ const Footer = () => {
       <div className="container mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-center text-center md:text-left">
           <div className="mb-4 md:mb-0">
-            <h4 className="text-xl font-bold text-blue-800">ProvaFacil</h4>
+            {/* Logo et police adaptés au Dashboard */}
+            <Link to="/" className="flex items-center space-x-2">
+              <img src="/logo.svg" alt="ProvaFacil Logo" className="h-8 w-auto" />
+              <h4 className="text-xl font-bold text-blue-800">ProvaFacil</h4>
+            </Link>
             <p className="text-sm mt-2 text-gray-500">
               Avaliação Inteligente para Professores
             </p>
