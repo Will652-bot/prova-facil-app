@@ -64,7 +64,7 @@ const App: React.FC = () => {
             <Route path="/sucesso" element={<PaymentSuccessPage />} />
             <Route path="/payment-cancel" element={<PaymentCancelPage />} />
             <Route path="/cancelado" element={<PaymentCancelPage />} />
-            {/* Pages publiques pour le footer */}
+            {/* Pages publiques pour le footer et les pages de vente */}
             <Route path="/planos" element={<PublicPlansPage />} />
             <Route path="/sobre" element={<PublicAboutPage />} />
             <Route path="/termos" element={<PublicTermsPage />} />
