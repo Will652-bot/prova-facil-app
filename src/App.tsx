@@ -32,12 +32,15 @@ import SettingsPage from './pages/SettingsPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
 
-// IMPORTATION CORRIGÉE : Le composant correct est 'verify-otp' et non 'VerifyOtpPage'
-import VerifyOtpPage from './pages/verify-otp';
+// >>> NOUVEL IMPORT : Importez votre nouvelle page VerifyOtpPage et les pages publiques
+import VerifyOtpPage from './pages/verify-otp'; // Assurez-vous que le nom est exact (par défaut ou nommé)
 
 // Importez les pages publiques pour le footer
 import PublicPlansPage from './pages/PlanosPage'; // Public page for plans
 import PublicAboutPage from './pages/SobrePage'; // Public page for about
+import PublicTermsPage from './pages/TermosPage'; // Public page for terms and conditions
+import PublicPrivacyPage from './pages/PrivacidadePage'; // Public page for privacy policy
+import PublicContactPage from './pages/ContatoPage'; // Public page for contact
 
 const App: React.FC = () => {
   return (
@@ -56,7 +59,6 @@ const App: React.FC = () => {
           <Route path="/request-password-reset" element={<RequestPasswordResetPage />} />
           <Route path="/debug-auth" element={<DebugAuthPage />} />
           <Route path="/update-password" element={<UpdatePasswordPage />} />
-          {/* Remplacer par le composant corrigé */}
           <Route path="/verify-otp" element={<VerifyOtpPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/sucesso" element={<PaymentSuccessPage />} />
@@ -65,6 +67,9 @@ const App: React.FC = () => {
           {/* Pages publiques pour le footer */}
           <Route path="/planos" element={<PublicPlansPage />} />
           <Route path="/sobre" element={<PublicAboutPage />} />
+          <Route path="/termos" element={<PublicTermsPage />} />
+          <Route path="/privacidade" element={<PublicPrivacyPage />} />
+          <Route path="/contato" element={<PublicContactPage />} />
 
           {/*
             PARTIE 2 : Routes protégées.
@@ -100,7 +105,7 @@ const App: React.FC = () => {
             <Route path="about" element={<AboutPage />} />
           </Route>
 
-          {/* Redirection pour les routes non trouvées. */}
+          {/* Redirections pour les routes non trouvées. */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
         <SignupDebugPanel />
