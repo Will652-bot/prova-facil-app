@@ -26,14 +26,16 @@ import { EvaluationsPage } from './pages/EvaluationsPage';
 import { EvaluationFormPage } from './pages/EvaluationFormPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { ConditionalFormattingPage } from './pages/ConditionalFormattingPage';
-import { PlansPage } from './pages/PlansPage';
-import { AboutPage } from './pages/AboutPage';
+import { PlansPage } from './pages/PlansPage'; // PlansPage for authenticated users
+import { AboutPage } from './pages/AboutPage'; // AboutPage for authenticated users
 import SettingsPage from './pages/SettingsPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
 
-// >>> NOUVEL IMPORT : Importez votre nouvelle page VerifyOtpPage
+// >>> NOUVEL IMPORT : Importez votre nouvelle page VerifyOtpPage et les pages publiques
 import VerifyOtpPage from './pages/verify-otp';
+import PublicPlansPage from './pages/PlanosPage'; // Public page for plans
+import PublicAboutPage from './pages/SobrePage'; // Public page for about
 
 const App: React.FC = () => {
   return (
@@ -58,13 +60,13 @@ const App: React.FC = () => {
           <Route path="/sucesso" element={<PaymentSuccessPage />} />
           <Route path="/payment-cancel" element={<PaymentCancelPage />} />
           <Route path="/cancelado" element={<PaymentCancelPage />} />
-          {/* Les pages "publiques" qui ont été perdues */}
-          <Route path="/plans" element={<PlansPage />} />
-          <Route path="/about" element={<AboutPage />} />
+          {/* Public pages, separate from the dashboard */}
+          <Route path="/planos" element={<PublicPlansPage />} />
+          <Route path="/sobre" element={<PublicAboutPage />} />
 
           {/*
             PARTIE 2 : Routes protégées.
-            Toutes les routes métiers sont imbriquées dans un seul <Route> parent.
+            Toutes les routes métiers et les pages du menu sont imbriquées dans un seul <Route> parent.
             L'element de ce parent est le ProtectedRoute, qui vérifie l'authentification.
             Le <Layout /> est rendu à l'intérieur de ce <ProtectedRoute>, et il contient
             un <Outlet /> qui affichera la page métier correcte.
@@ -93,6 +95,8 @@ const App: React.FC = () => {
             <Route path="evaluations/:id/edit" element={<EvaluationFormPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="plans" element={<PlansPage />} />
+            <Route path="about" element={<AboutPage />} />
           </Route>
 
           {/* Redirection standard pour toute route non trouvée.
