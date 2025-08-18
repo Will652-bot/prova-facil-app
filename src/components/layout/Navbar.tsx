@@ -26,15 +26,14 @@ export const Navbar: React.FC = () => {
     await signOut();
   };
 
-  // La fonction pour vérifier si une route est active
-  const isActive = (path: string) => {
-    return location.pathname === `/app${path}`;
+  const isPlanningRoute = (path: string) => {
+    return ['/criteria', '/evaluation-titles', '/evaluation-criteria', '/formatting'].includes(path);
   };
 
-  // Les liens de navigation principaux
   const navLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: <BarChart className="h-4 w-4" /> },
     { name: 'Turmas', path: '/classes', icon: <BookOpen className="h-4 w-4" /> },
+    // Planejamento is a dropdown, not a direct link
     { name: 'Avaliações', path: '/evaluations', icon: <FileCheck className="h-4 w-4" /> },
     { name: 'Relatórios', path: '/reports', icon: <BarChart className="h-4 w-4" /> },
     { name: 'Planos', path: '/plans', icon: <CreditCard className="h-4 w-4" /> },
@@ -42,7 +41,7 @@ export const Navbar: React.FC = () => {
     { name: 'Sobre', path: '/about', icon: <Info className="h-4 w-4" /> },
   ];
 
-  // Les liens du menu déroulant "Planejamento"
+  // CORRECTION 1: Assurer que "Associar Critérios" apparaît toujours
   const planningLinks = [
     { name: 'Critérios', path: '/criteria', icon: <ListChecks className="h-4 w-4" /> },
     { name: 'Títulos da Avaliação', path: '/evaluation-titles', icon: <FileText className="h-4 w-4" /> },
@@ -50,13 +49,13 @@ export const Navbar: React.FC = () => {
     { name: 'Formatação', path: '/formatting', icon: <Palette className="h-4 w-4" /> },
   ];
 
-  // La fonction pour vérifier si un lien de planification est actif
-  const isPlanningRouteActive = () => {
-    return planningLinks.some(link => isActive(link.path));
+  const isActive = (path: string) => {
+    return location.pathname === path;
   };
-  
-  // Correction 1: Assurer que "Associar Critérios" apparaît toujours
-  // Cette correction est déjà dans votre code, je l'ai gardée.
+
+  const isPlanningActive = () => {
+    return isPlanningRoute(location.pathname);
+  };
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
@@ -65,7 +64,7 @@ export const Navbar: React.FC = () => {
           <div className="flex">
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center">
-              <Link to="/app/dashboard" className="flex items-center space-x-2">
+              <Link to="/dashboard" className="flex items-center space-x-2">
                 <GraduationCap className="h-8 w-8 text-primary-600" />
                 <span className="text-xl font-bold text-gray-900 hidden sm:block">ProvaFacíl</span>
               </Link>
@@ -73,14 +72,15 @@ export const Navbar: React.FC = () => {
             
             {/* Desktop navigation */}
             <div className="hidden sm:ml-6 sm:flex sm:space-x-4">
-              {navLinks.map((link) => {
-                if (link.name === 'Avaliações') {
+              {navLinks.map((link, index) => {
+                // Special handling for Planejamento dropdown (after Turmas)
+                if (index === 2) {
                   return (
                     <div key="planejamento" className="relative">
                       <button
                         onClick={togglePlanningMenu}
                         className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium h-16 ${
-                          isPlanningRouteActive()
+                          isPlanningActive()
                             ? 'border-primary-500 text-gray-900'
                             : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                         }`}
@@ -95,7 +95,7 @@ export const Navbar: React.FC = () => {
                           {planningLinks.map((planningLink) => (
                             <Link
                               key={planningLink.path}
-                              to={`/app${planningLink.path}`}
+                              to={planningLink.path}
                               className={`block px-4 py-2 text-sm ${
                                 isActive(planningLink.path)
                                   ? 'bg-primary-50 text-primary-700'
@@ -121,7 +121,7 @@ export const Navbar: React.FC = () => {
                 return (
                   <Link
                     key={link.path}
-                    to={`/app${link.path}`}
+                    to={link.path}
                     className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium h-16 ${
                       isActive(link.path)
                         ? 'border-primary-500 text-gray-900'
@@ -182,14 +182,15 @@ export const Navbar: React.FC = () => {
       {/* Mobile menu */}
       <div className={`sm:hidden ${isOpen ? 'block' : 'hidden'}`}>
         <div className="pt-2 pb-3 space-y-1">
-          {navLinks.map((link) => {
-            if (link.name === 'Avaliações') {
+          {navLinks.map((link, index) => {
+            // Special handling for Planejamento dropdown in mobile view
+            if (index === 2) {
               return (
                 <div key="planejamento-mobile">
                   <button
                     onClick={togglePlanningMenu}
                     className={`flex items-center w-full pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                      isPlanningRouteActive()
+                      isPlanningActive()
                         ? 'bg-primary-50 border-primary-500 text-primary-700'
                         : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
                     }`}
@@ -204,7 +205,7 @@ export const Navbar: React.FC = () => {
                       {planningLinks.map((planningLink) => (
                         <Link
                           key={planningLink.path}
-                          to={`/app${planningLink.path}`}
+                          to={planningLink.path}
                           className={`flex items-center pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
                             isActive(planningLink.path)
                               ? 'bg-primary-50 border-primary-500 text-primary-700'
@@ -225,7 +226,7 @@ export const Navbar: React.FC = () => {
             return (
               <Link
                 key={link.path}
-                to={`/app${link.path}`}
+                to={link.path}
                 className={`flex items-center pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
                   isActive(link.path)
                     ? 'bg-primary-50 border-primary-500 text-primary-700'
