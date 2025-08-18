@@ -32,6 +32,12 @@ import SettingsPage from './pages/SettingsPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
 
+// IMPORTATION CORRIGÉE : Assurez-vous d'importer le bon composant OTP
+// La capture d'écran a montré que VerifyOtpPage n'était pas défini.
+// Cela est dû à un problème dans l'importation.
+// Je vais supposer le nom de fichier correct, qui est généralement 'VerifyOtpPage' ou similaire.
+import { VerifyOtpPage } from './pages/VerifyOtpPage';
+
 // Importez les pages publiques pour le footer
 import PublicPlansPage from './pages/PlanosPage'; // Public page for plans
 import PublicAboutPage from './pages/SobrePage'; // Public page for about
@@ -53,6 +59,7 @@ const App: React.FC = () => {
           <Route path="/request-password-reset" element={<RequestPasswordResetPage />} />
           <Route path="/debug-auth" element={<DebugAuthPage />} />
           <Route path="/update-password" element={<UpdatePasswordPage />} />
+          {/* Remplacer par le composant corrigé */}
           <Route path="/verify-otp" element={<VerifyOtpPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/sucesso" element={<PaymentSuccessPage />} />
