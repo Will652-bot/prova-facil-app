@@ -32,8 +32,7 @@ import SettingsPage from './pages/SettingsPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
 
-// >>> NOUVEL IMPORT : Importez votre nouvelle page VerifyOtpPage et les pages publiques
-import VerifyOtpPage from './pages/verify-otp';
+// Importez les pages publiques pour le footer
 import PublicPlansPage from './pages/PlanosPage'; // Public page for plans
 import PublicAboutPage from './pages/SobrePage'; // Public page for about
 
@@ -44,8 +43,7 @@ const App: React.FC = () => {
         <Routes>
           {/*
             PARTIE 1 : Routes publiques.
-            Elles ne sont PAS protégées par AuthContext ou ProtectedRoute.
-            Le layout pour ces pages est minimal ou inexistant.
+            Elles sont définies en premier.
           */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -60,16 +58,15 @@ const App: React.FC = () => {
           <Route path="/sucesso" element={<PaymentSuccessPage />} />
           <Route path="/payment-cancel" element={<PaymentCancelPage />} />
           <Route path="/cancelado" element={<PaymentCancelPage />} />
-          {/* Public pages, separate from the dashboard */}
+          {/* Pages publiques pour le footer */}
           <Route path="/planos" element={<PublicPlansPage />} />
           <Route path="/sobre" element={<PublicAboutPage />} />
 
           {/*
             PARTIE 2 : Routes protégées.
-            Toutes les routes métiers et les pages du menu sont imbriquées dans un seul <Route> parent.
-            L'element de ce parent est le ProtectedRoute, qui vérifie l'authentification.
-            Le <Layout /> est rendu à l'intérieur de ce <ProtectedRoute>, et il contient
-            un <Outlet /> qui affichera la page métier correcte.
+            Toutes les pages métiers sont imbriquées dans un seul <Route> parent.
+            Ce bloc est protégé par ProtectedRoute, qui vérifie l'authentification.
+            Le <Layout /> rendra ensuite les pages métiers via <Outlet />.
           */}
           <Route
             path="/"
@@ -99,10 +96,7 @@ const App: React.FC = () => {
             <Route path="about" element={<AboutPage />} />
           </Route>
 
-          {/* Redirection standard pour toute route non trouvée.
-            Note: Cette route redirigera vers le dashboard, qui est une route protégée.
-            Si l'utilisateur n'est pas authentifié, il sera ensuite redirigé vers /login.
-          */}
+          {/* Redirection pour les routes non trouvées. */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
         <SignupDebugPanel />
