@@ -146,13 +146,13 @@ export const CriteriaPage: React.FC = () => {
         <div className="mt-4 sm:mt-0 flex space-x-3">
           <Button
             variant="outline"
-            onClick={() => navigate('/app/evaluation-titles')}
+            onClick={() => navigate('/evaluation-titles')}
             leftIcon={<FileText className="h-4 w-4" />}
           >
             Gerenciar Títulos e Provas
           </Button>
           <Button
-            onClick={() => navigate('/app/criteria/new')}
+            onClick={() => navigate('/criteria/new')}
             leftIcon={<Plus className="h-4 w-4" />}
           >
             Novo Critério
@@ -253,7 +253,7 @@ export const CriteriaPage: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => navigate(`/app/criteria/${criterion.id}/edit`)}
+                      onClick={() => navigate(`/criteria/${criterion.id}/edit`)}
                       leftIcon={<Edit className="h-4 w-4" />}
                     >
                       Editar
