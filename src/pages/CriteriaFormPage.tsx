@@ -44,7 +44,7 @@ export const CriteriaFormPage: React.FC = () => {
       }
     } catch (error) {
       toast.error('Erro ao carregar critério');
-      navigate('/app/criteria');
+      navigate('/criteria');
     }
   };
 
@@ -105,7 +105,7 @@ export const CriteriaFormPage: React.FC = () => {
         toast.success('Critério criado com sucesso');
       }
 
-      navigate('/app/criteria');
+      navigate('/criteria');
     } catch (error) {
       console.error('Erro ao salvar critério:', error);
       toast.error('Erro ao salvar critério');
@@ -161,7 +161,7 @@ export const CriteriaFormPage: React.FC = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('/app/criteria')}
+              onClick={() => navigate('/criteria')}
             >
               Cancelar
             </Button>
