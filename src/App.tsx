@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { CheckEmailPage } from './pages/CheckEmailPage';
@@ -41,7 +41,14 @@ import ContatoPage from './pages/ContatoPage';
 import VerifyOtpPage from './pages/verify-otp';
 
 // Composant de mise en page pour les pages publiques
-import LayoutPublic from './components/layout/LayoutPublic'; 
+import LayoutPublic from './components/layout/LayoutPublic';
+
+// Nouveau composant pour gérer la redirection conditionnelle au niveau de la route principale
+const AuthConditionalRedirect: React.FC = () => {
+  const { user } = useAuth();
+  // Si l'utilisateur est connecté, le rediriger vers le dashboard, sinon afficher la page de login
+  return user ? <Navigate to="/app/dashboard" replace /> : <LoginPage />;
+};
 
 const App: React.FC = () => {
   return (
@@ -50,8 +57,9 @@ const App: React.FC = () => {
         <Routes>
           {/* Mise en page pour les routes publiques avec le pied de page inclus */}
           <Route path="/" element={<LayoutPublic />}>
-            {/* Pages publiques accessibles à tous */}
-            <Route index element={<LoginPage />} />
+            {/* La route index utilise notre nouveau composant de redirection conditionnelle */}
+            <Route index element={<AuthConditionalRedirect />} />
+            {/* Autres pages publiques */}
             <Route path="sobre" element={<SobrePage />} />
             <Route path="planos" element={<PlanosPage />} />
             <Route path="termos-de-uso" element={<TermosPage />} />
@@ -106,8 +114,8 @@ const App: React.FC = () => {
             <Route path="about" element={<AboutPage />} />
           </Route>
 
-          {/* Redirecionamento padrão pour n'importe quelle route non trouvée */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          {/* Redirection vers la page d'accueil pour toute route non reconnue */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <SignupDebugPanel />
       </Router>
