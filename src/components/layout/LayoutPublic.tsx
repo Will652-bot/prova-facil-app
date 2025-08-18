@@ -4,7 +4,7 @@ import { FaBars } from 'react-icons/fa';
 import { FaTimes } from 'react-icons/fa';
 import { IoIosArrowUp } from "react-icons/io";
 import { useState } from 'react';
-import Footer from './Footer';
+import Footer from '../Footer';
 
 const NavbarPublic = () => {
   const [isOpen, setIsOpen] = useState(false);
