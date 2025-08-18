@@ -32,15 +32,14 @@ import SettingsPage from './pages/SettingsPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SignupDebugPanel } from './components/debug/SignupDebugPanel';
 
-// >>> NOUVEL IMPORT : Importez votre nouvelle page VerifyOtpPage et les pages publiques
-import VerifyOtpPage from './pages/verify-otp'; // Assurez-vous que le nom est exact (par défaut ou nommé)
-
-// Importez les pages publiques pour le footer
-import PublicPlansPage from './pages/PlanosPage'; // Public page for plans
-import PublicAboutPage from './pages/SobrePage'; // Public page for about
-import PublicTermsPage from './pages/TermosPage'; // Public page for terms and conditions
-import PublicPrivacyPage from './pages/PrivacidadePage'; // Public page for privacy policy
-import PublicContactPage from './pages/ContatoPage'; // Public page for contact
+// IMPORTATIONS DES PAGES PUBLIQUES
+import PublicAboutPage from './pages/SobrePage';
+import PublicPlansPage from './pages/PlanosPage';
+import PublicTermsPage from './pages/TermosPage';
+import PublicPrivacyPage from './pages/PrivacidadePage';
+import PublicContactPage from './pages/ContatoPage';
+import VerifyOtpPage from './pages/verify-otp';
+import LayoutPublic from './components/layout/LayoutPublic';
 
 const App: React.FC = () => {
   return (
@@ -48,28 +47,30 @@ const App: React.FC = () => {
       <Router>
         <Routes>
           {/*
-            PARTIE 1 : Routes publiques.
-            Elles sont définies en premier.
+            PARTIE 1 : Routes publiques qui utilisent le LayoutPublic.
+            Cela inclut toutes les pages d'authentification, de paiement et du footer.
           */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/check-email" element={<CheckEmailPage />} />
-          <Route path="/verify-email" element={<VerifyEmailPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/request-password-reset" element={<RequestPasswordResetPage />} />
-          <Route path="/debug-auth" element={<DebugAuthPage />} />
-          <Route path="/update-password" element={<UpdatePasswordPage />} />
-          <Route path="/verify-otp" element={<VerifyOtpPage />} />
-          <Route path="/payment-success" element={<PaymentSuccessPage />} />
-          <Route path="/sucesso" element={<PaymentSuccessPage />} />
-          <Route path="/payment-cancel" element={<PaymentCancelPage />} />
-          <Route path="/cancelado" element={<PaymentCancelPage />} />
-          {/* Pages publiques pour le footer */}
-          <Route path="/planos" element={<PublicPlansPage />} />
-          <Route path="/sobre" element={<PublicAboutPage />} />
-          <Route path="/termos" element={<PublicTermsPage />} />
-          <Route path="/privacidade" element={<PublicPrivacyPage />} />
-          <Route path="/contato" element={<PublicContactPage />} />
+          <Route element={<LayoutPublic />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/check-email" element={<CheckEmailPage />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/request-password-reset" element={<RequestPasswordResetPage />} />
+            <Route path="/debug-auth" element={<DebugAuthPage />} />
+            <Route path="/update-password" element={<UpdatePasswordPage />} />
+            <Route path="/verify-otp" element={<VerifyOtpPage />} />
+            <Route path="/payment-success" element={<PaymentSuccessPage />} />
+            <Route path="/sucesso" element={<PaymentSuccessPage />} />
+            <Route path="/payment-cancel" element={<PaymentCancelPage />} />
+            <Route path="/cancelado" element={<PaymentCancelPage />} />
+            {/* Pages publiques pour le footer */}
+            <Route path="/planos" element={<PublicPlansPage />} />
+            <Route path="/sobre" element={<PublicAboutPage />} />
+            <Route path="/termos" element={<PublicTermsPage />} />
+            <Route path="/privacidade" element={<PublicPrivacyPage />} />
+            <Route path="/contato" element={<PublicContactPage />} />
+          </Route>
 
           {/*
             PARTIE 2 : Routes protégées.
