@@ -14,9 +14,12 @@ export const PlansPage: React.FC = () => {
   const { user } = useAuth();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'checking' | 'active' | 'inactive'>('checking');
+  
+  // Définit le Price ID de Stripe pour le plan Pro. Remplacez par votre vrai ID de prix.
+  const proPriceId = 'your-stripe-pro-price-id-here';
 
   useEffect(() => {
-    // Check if user comes from successful payment
+    // Vérifie si l'utilisateur vient d'un paiement réussi
     const urlParams = new URLSearchParams(window.location.search);
     const paymentSuccess = urlParams.get('payment_success');
 
@@ -24,10 +27,10 @@ export const PlansPage: React.FC = () => {
       setShowSuccessMessage(true);
       toast.success('Parabéns! Seu plano Pro está ativo.');
 
-      // Clear URL parameter
+      // Nettoie le paramètre de l'URL
       window.history.replaceState({}, document.title, window.location.pathname);
 
-      // Hide message after 10 seconds
+      // Cache le message après 10 secondes
       setTimeout(() => setShowSuccessMessage(false), 10000);
     }
   }, [user]);
@@ -59,19 +62,19 @@ export const PlansPage: React.FC = () => {
       }
     };
 
-    // Check immediately
+    // Vérifie immédiatement
     checkSubscriptionStatus();
 
     // ✅ VÉRIFICATION PÉRIODIQUE DU STATUT PRO
-    const interval = setInterval(checkSubscriptionStatus, 10000); // Check every 10 seconds
+    const interval = setInterval(checkSubscriptionStatus, 10000); // Vérifie toutes les 10 secondes
 
     return () => clearInterval(interval);
   }, [user?.id]);
 
-  // Check if user has active Pro subscription
+  // Vérifie si l'utilisateur a une souscription Pro active
   const hasActivePro = subscriptionStatus === 'active' || user?.pro_subscription_active === true;
 
-  // Function to format expiration date
+  // Fonction pour formater la date d'expiration
   const formatExpirationDate = (dateString: string) => {
     try {
       return new Date(dateString).toLocaleDateString('pt-BR');
@@ -80,7 +83,7 @@ export const PlansPage: React.FC = () => {
     }
   };
 
-  // Loading state while user data is being fetched
+  // État de chargement pendant la récupération des données utilisateur
   if (!user) {
     return (
       <div className="space-y-6 animate-in">
@@ -109,7 +112,7 @@ export const PlansPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Success message for new Pro subscribers */}
+      {/* Message de succès pour les nouveaux abonnés Pro */}
       {showSuccessMessage && hasActivePro && (
         <Card className="bg-gradient-to-r from-success-50 to-success-100 border-success-200">
           <div className="p-4 sm:p-6">
@@ -130,7 +133,7 @@ export const PlansPage: React.FC = () => {
         </Card>
       )}
 
-      {/* Subscription status indicator */}
+      {/* Indicateur de statut d'abonnement */}
       {subscriptionStatus === 'checking' && (
         <Card className="bg-blue-50 border-blue-200">
           <div className="p-4">
@@ -149,11 +152,11 @@ export const PlansPage: React.FC = () => {
         </Card>
       )}
 
-      {/* Conditional display based on subscription status */}
+      {/* Affichage conditionnel basé sur le statut d'abonnement */}
       {hasActivePro ? (
-        // User with active Pro subscription
+        // Utilisateur avec un abonnement Pro actif
         <div className="space-y-6">
-          {/* Pro Status Card */}
+          {/* Carte de statut Pro */}
           <Card className="bg-gradient-to-r from-primary-50 to-secondary-50 border-primary-200">
             <div className="p-6 sm:p-8">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
@@ -173,7 +176,7 @@ export const PlansPage: React.FC = () => {
                 <ProBadge />
               </div>
 
-              {/* Subscription information */}
+              {/* Informations sur l'abonnement */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="bg-white rounded-lg p-4 border border-primary-200">
                   <h3 className="font-semibold text-gray-900 mb-2">Plano Atual</h3>
@@ -190,7 +193,7 @@ export const PlansPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Pro Features */}
+              {/* Fonctionnalités Pro */}
               <div className="mt-6">
                 <h3 className="font-semibold text-gray-900 mb-4">
                   Suas Funcionalidades Pro Ativas:
@@ -206,18 +209,18 @@ export const PlansPage: React.FC = () => {
                   </div>
                   <div className="flex items-center text-success-700">
                     <Check className="h-5 w-5 mr-2" />
-                    <span>Possibilidade de anexar arquivos PDF às avaliações</span>
+                    <span>Possibilité de anexar arquivos PDF às avaliações</span>
                   </div>
                   <div className="flex items-center text-success-700">
                     <Check className="h-5 w-5 mr-2" />
-                    <span>Support prioritário</span>
+                    <span>Suporte prioritário</span>
                   </div>
                 </div>
               </div>
             </div>
           </Card>
 
-          {/* Subscription Management */}
+          {/* Gestion de l'abonnement */}
           <Card>
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -242,9 +245,9 @@ export const PlansPage: React.FC = () => {
           </Card>
         </div>
       ) : (
-        // User without Pro subscription - Show plans
+        // Utilisateur sans abonnement Pro - Affichage des plans
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Free Plan */}
+          {/* Plan Gratuit */}
           <Card className="relative">
             <div className="p-6">
               <h3 className="text-2xl font-bold text-gray-900">Gratuito</h3>
@@ -273,7 +276,7 @@ export const PlansPage: React.FC = () => {
             </div>
           </Card>
 
-          {/* Pro Plan */}
+          {/* Plan Pro */}
           <Card className="relative border-primary-500">
             <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
               <span className="bg-primary-500 text-white px-4 py-1 rounded-full text-sm font-medium">
@@ -311,17 +314,21 @@ export const PlansPage: React.FC = () => {
                 </li>
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-primary-500 mt-0.5" />
-                  <span className="ml-3 text-gray-700">Possibilidade de anexar arquivos PDF às avaliações</span>
+                  <span className="ml-3 text-gray-700">Possibilité de anexar arquivos PDF às avaliações</span>
                 </li>
               </ul>
 
               <div className="mt-8">
-                <StripeButton className="w-full" />
+                <StripeButton
+                  priceId={proPriceId}
+                  successUrl={`${window.location.origin}/sucesso`}
+                  cancelUrl={`${window.location.origin}/cancelado`}
+                />
               </div>
             </div>
           </Card>
 
-          {/* Enterprise Plan */}
+          {/* Plan Entreprise */}
           <Card className="relative">
             <div className="p-6">
               <h3 className="text-2xl font-bold text-gray-900">Empresarial</h3>
