@@ -14,35 +14,11 @@ export const PlansPage: React.FC = () => {
   const { user } = useAuth();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'checking' | 'active' | 'inactive'>('checking');
-  const [proPriceId, setProPriceId] = useState<string | null>(null);
 
   // Récupère les URLs de succès et d'annulation
   const successUrl = `${window.location.origin}/sucesso`;
   const cancelUrl = `${window.location.origin}/cancelado`;
   
-  // Nouvelle logique pour récupérer le prix ID de Stripe
-  useEffect(() => {
-    const fetchStripePriceId = async () => {
-      try {
-        // Appelle une fonction Edge de Supabase pour récupérer le Price ID
-        const { data, error } = await supabase
-          .from('app_settings')
-          .select('stripe_price_id')
-          .single();
-
-        if (error) {
-          throw error;
-        }
-
-        setProPriceId(data.stripe_price_id);
-      } catch (error) {
-        console.error('❌ [PlansPage] Erreur lors de la récupération du Price ID de Stripe:', error);
-        toast.error('Une erreur est survenue lors du chargement des plans.');
-      }
-    };
-    fetchStripePriceId();
-  }, []);
-
   useEffect(() => {
     // Vérifie si l'utilisateur vient d'un paiement réussi
     const urlParams = new URLSearchParams(window.location.search);
@@ -108,8 +84,8 @@ export const PlansPage: React.FC = () => {
     }
   };
 
-  // État de chargement pendant la récupération des données utilisateur et du prix
-  if (!user || proPriceId === null) {
+  // État de chargement pendant la récupération des données utilisateur
+  if (!user) {
     return (
       <div className="space-y-6 animate-in">
         <div>
@@ -291,7 +267,7 @@ export const PlansPage: React.FC = () => {
                 </li>
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-primary-500 mt-0.5" />
-                  <span className="ml-3 text-gray-700">Suporte por email</span>
+                  <span className="ml-3 text-gray-700">Suporte par email</span>
                 </li>
               </ul>
 
@@ -319,7 +295,7 @@ export const PlansPage: React.FC = () => {
               <ul className="mt-6 space-y-4">
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-primary-500 mt-0.5" />
-                  <span className="ml-3 text-gray-700">Todas as features do Plano Gratuito</span>
+                  <span className="ml-3 text-gray-700">Todas as features du Plano Gratuit</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-primary-500 mt-0.5" />
@@ -331,11 +307,11 @@ export const PlansPage: React.FC = () => {
                 </li>
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-primary-500 mt-0.5" />
-                  <span className="ml-3 text-gray-700">Exportação em PDF</span>
+                  <span className="ml-3 text-gray-700">Exportação en PDF</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-primary-500 mt-0.5" />
-                  <span className="ml-3 text-gray-700">Exportação em MS Excel</span>
+                  <span className="ml-3 text-gray-700">Exportação en MS Excel</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-primary-500 mt-0.5" />
