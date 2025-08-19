@@ -32,7 +32,7 @@ const FooterAuthenticated = () => {
             {/* Logo et police adaptés au Dashboard */}
             <Link to="/dashboard" className="flex items-center space-x-2">
               <img src="/logo.svg" alt="ProvaFacil Logo" className="h-8 w-auto" />
-              <h4 className="text-xl font-bold text-blue-800">ProvaFacil</h4>
+              <h4 className="text-xl font-bold text-gray-900">ProvaFacil</h4>
             </Link>
             <p className="text-sm mt-2 text-gray-500">
               Avaliação Inteligente para Professores
