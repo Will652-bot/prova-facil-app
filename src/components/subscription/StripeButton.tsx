@@ -61,7 +61,7 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
 
     if (isBoltPreview) {
       toast.dismiss('bolt-preview');
-      toast.error('Pagamento indisponível no ambiente de preview. Use a versão publicada.', {
+      toast.error('Pagamento indisponível no environnement de preview. Use a versão publicada.', {
         id: 'bolt-preview',
       });
       return;
@@ -69,6 +69,7 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
 
     setProcessing(true);
     try {
+      console.log('Début de la requête:', { success_url: successUrl, cancel_url: cancelUrl, customer_email: user.email, priceId });
       const sessionResult = await supabase.auth.getSession();
       const token = sessionResult.data.session?.access_token;
       if (!token) {
@@ -84,21 +85,25 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          success_url: successUrl, // Aligné avec la Edge Function
-          cancel_url: cancelUrl,   // Aligné avec la Edge Function
+          success_url: successUrl,
+          cancel_url: cancelUrl,
           customer_email: user.email,
           priceId,
         }),
       });
 
+      const responseText = await response.clone().text();
+      console.log('Réponse brute:', responseText);
+      const result = await response.json();
+      console.log('Réponse analysée:', result);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMsg = errorData.error || errorData.details || `Erro HTTP ${response.status}`;
         throw new Error(errorMsg);
       }
 
-      const result = await response.json();
       if (!result.url) throw new Error('URL de checkout não recebida');
+      console.log('Redirection vers:', result.url); // Débogage supplémentaire
       window.location.href = result.url;
     } catch (error: Error) {
       console.error('❌ Erro StripeButton:', error);
