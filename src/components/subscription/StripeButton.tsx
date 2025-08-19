@@ -15,6 +15,8 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
   const { user } = useAuth();
   const [processing, setProcessing] = useState(false);
 
+  const priceId = import.meta.env.VITE_STRIPE_PRICE_ID_PRO;
+
   const needsProSubscription = React.useMemo(() => {
     if (!user) return false;
     if (!user.pro_subscription_active) return true;
@@ -24,10 +26,17 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
     return expirationDate <= new Date();
   }, [user]);
 
-  const isBoltPreview = window.location.hostname.includes('webcontainer-api.io') ||
-                        window.location.hostname.includes('bolt.new');
+  const isBoltPreview =
+    window.location.hostname.includes('webcontainer-api.io') ||
+    window.location.hostname.includes('bolt.new');
 
   const handleSubscribe = async () => {
+    if (!priceId) {
+      console.error('❌ Stripe Price ID manquant (VITE_STRIPE_PRICE_ID_PRO)');
+      toast.error('Configuração Stripe ausente. Contate o suporte.');
+      return;
+    }
+
     if (!user?.id || !user?.email) {
       toast.dismiss('unauthenticated');
       toast.error('Usuário não autenticado ou email não disponível', { id: 'unauthenticated' });
@@ -52,19 +61,20 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
         throw new Error('Token de sessão não encontrado.');
       }
 
-      // URL de la fonction Edge de Supabase
+      // URL da função Edge de Supabase
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-link`;
 
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           successUrl,
           cancelUrl,
-          customer_email: user.email
+          customer_email: user.email,
+          priceId, // on envoie explicitement le priceId
         }),
       });
 
@@ -78,7 +88,6 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
       if (!result.url) throw new Error('URL de checkout não recebida');
 
       window.location.href = result.url;
-
     } catch (error: any) {
       console.error('❌ Erro StripeButton:', error);
 
@@ -101,6 +110,19 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
   };
 
   if (!needsProSubscription) return null;
+
+  if (!priceId) {
+    // Affiche un bouton grisé si la variable n’est pas configurée
+    return (
+      <Button
+        disabled
+        leftIcon={<CreditCard className="h-4 w-4" />}
+        className={`bg-gray-400 cursor-not-allowed ${className}`}
+      >
+        Configuração Stripe ausente
+      </Button>
+    );
+  }
 
   return (
     <Button
