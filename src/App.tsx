@@ -52,10 +52,10 @@ import PublicTermsPage from './pages/TermosPage';
 import PublicPrivacyPage from './pages/PrivacidadePage';
 import PublicContactPage from './pages/ContatoPage';
 
-// Pages pour les utilisateurs connectés
-import TermosPageAuthenticated from 'src/pages/authenticated/TermosPage';
-import PrivacidadePageAuthenticated from 'src/pages/authenticated/PrivacidadePage';
-import ContatoPageAuthenticated from 'src/pages/authenticated/ContatoPage';
+// Pages pour les utilisateurs connectés (versions authentifiées)
+import TermosPageAuthenticated from './pages/authenticated/TermosPage';
+import PrivacidadePageAuthenticated from './pages/authenticated/PrivacidadePage';
+import ContatoPageAuthenticated from './pages/authenticated/ContatoPage';
 
 const App: React.FC = () => {
   return (
@@ -85,7 +85,7 @@ const App: React.FC = () => {
             <Route path="/payment-cancel" element={<PaymentCancelPage />} />
             <Route path="/cancelado" element={<PaymentCancelPage />} />
 
-            {/* Pages SEO / Footer — toujours accessibles */}
+            {/* Pages SEO / Footer — toujours accessibles (versions publiques) */}
             <Route path="/planos" element={<PublicPlansPage />} />
             <Route path="/sobre" element={<PublicAboutPage />} />
             <Route path="/termos" element={<PublicTermsPage />} />
@@ -136,10 +136,10 @@ const App: React.FC = () => {
             <Route path="plans" element={<PlansPage />} />
             <Route path="about" element={<AboutPage />} />
             
-            {/* Pages du footer pour le mode connecté */}
-            <Route path="termos" element={<TermosPage />} />
-            <Route path="privacidade" element={<PrivacidadePage />} />
-            <Route path="contato" element={<ContatoPage />} />
+            {/* Pages du footer pour le mode connecté (versions authentifiées) */}
+            <Route path="termos" element={<TermosPageAuthenticated />} />
+            <Route path="privacidade" element={<PrivacidadePageAuthenticated />} />
+            <Route path="contato" element={<ContatoPageAuthenticated />} />
           </Route>
 
           {/* Catch-all : vers /dashboard ; si non connecté, ProtectedRoute renverra /login */}
