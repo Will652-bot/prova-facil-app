@@ -53,9 +53,9 @@ import PublicPrivacyPage from './pages/PrivacidadePage';
 import PublicContactPage from './pages/ContatoPage';
 
 // Pages pour les utilisateurs connectés
-import TermosPageAuthenticated from './pages/authenticated/TermosPageAuthenticated';
-import PrivacidadePageAuthenticated from './pages/authenticated/PrivacidadePageAuthenticated';
-import ContatoPageAuthenticated from './pages/authenticated/ContatoPageAuthenticated';
+import TermosPageAuthenticated from 'src/pages/authenticated/TermosPageAuthenticated';
+import PrivacidadePageAuthenticated from 'src/pages/authenticated/PrivacidadePageAuthenticated';
+import ContatoPageAuthenticated from 'src/pages/authenticated/ContatoPageAuthenticated';
 
 const App: React.FC = () => {
   return (
