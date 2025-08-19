@@ -14,9 +14,34 @@ export const PlansPage: React.FC = () => {
   const { user } = useAuth();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<'checking' | 'active' | 'inactive'>('checking');
+  const [proPriceId, setProPriceId] = useState<string | null>(null);
+
+  // Récupère les URLs de succès et d'annulation
+  const successUrl = `${window.location.origin}/sucesso`;
+  const cancelUrl = `${window.location.origin}/cancelado`;
   
-  // Définit le Price ID de Stripe pour le plan Pro. Remplacez par votre vrai ID de prix.
-  const proPriceId = 'your-stripe-pro-price-id-here';
+  // Nouvelle logique pour récupérer le prix ID de Stripe
+  useEffect(() => {
+    const fetchStripePriceId = async () => {
+      try {
+        // Appelle une fonction Edge de Supabase pour récupérer le Price ID
+        const { data, error } = await supabase
+          .from('app_settings')
+          .select('stripe_price_id')
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        setProPriceId(data.stripe_price_id);
+      } catch (error) {
+        console.error('❌ [PlansPage] Erreur lors de la récupération du Price ID de Stripe:', error);
+        toast.error('Une erreur est survenue lors du chargement des plans.');
+      }
+    };
+    fetchStripePriceId();
+  }, []);
 
   useEffect(() => {
     // Vérifie si l'utilisateur vient d'un paiement réussi
@@ -83,8 +108,8 @@ export const PlansPage: React.FC = () => {
     }
   };
 
-  // État de chargement pendant la récupération des données utilisateur
-  if (!user) {
+  // État de chargement pendant la récupération des données utilisateur et du prix
+  if (!user || proPriceId === null) {
     return (
       <div className="space-y-6 animate-in">
         <div>
@@ -321,8 +346,8 @@ export const PlansPage: React.FC = () => {
               <div className="mt-8">
                 <StripeButton
                   priceId={proPriceId}
-                  successUrl={`${window.location.origin}/sucesso`}
-                  cancelUrl={`${window.location.origin}/cancelado`}
+                  successUrl={successUrl}
+                  cancelUrl={cancelUrl}
                 />
               </div>
             </div>
