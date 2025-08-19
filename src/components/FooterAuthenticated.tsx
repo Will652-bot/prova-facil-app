@@ -22,7 +22,7 @@ const FooterAuthenticated = () => {
   React.useEffect(() => {
     window.addEventListener('scroll', checkScrollTop);
     return () => window.removeEventListener('scroll', checkScrollTop);
-  }, [showScroll]); // Ajout de showScroll dans les dépendances pour éviter les bugs
+  }, [showScroll]);
 
   return (
     <footer className="bg-white text-gray-700 font-sans py-8 mt-12 shadow-inner">
