@@ -34,8 +34,8 @@ import { EvaluationsPage } from './pages/EvaluationsPage';
 import { EvaluationFormPage } from './pages/EvaluationFormPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { ConditionalFormattingPage } from './pages/ConditionalFormattingPage';
-import { PlansPage } from './pages/PlansPage';   // pages internes (connecté)
-import { AboutPage } from './pages/AboutPage';   // pages internes (connecté)
+import { PlansPage } from './pages/PlansPage';
+import { AboutPage } from './pages/AboutPage';
 import SettingsPage from './pages/SettingsPage';
 
 // Garde d’auth
@@ -52,14 +52,18 @@ import PublicTermsPage from './pages/TermosPage';
 import PublicPrivacyPage from './pages/PrivacidadePage';
 import PublicContactPage from './pages/ContatoPage';
 
+// Pages pour les utilisateurs connectés
+import TermosPageAuthenticated from './pages/authenticated/TermosPageAuthenticated';
+import PrivacidadePageAuthenticated from './pages/authenticated/PrivacidadePageAuthenticated';
+import ContatoPageAuthenticated from './pages/authenticated/ContatoPageAuthenticated';
+
 const App: React.FC = () => {
   return (
     <AuthProvider>
       <Router>
         <Routes>
           {/*
-            ===== PARTIE 1 — ROUTES PUBLIQUES =====
-            - Accessibles même si l'utilisateur est connecté
+            ===== PARTIE 1 — ROUTES PUBLIQUES (ACCESSIBLES MÊME SI L'UTILISATEUR EST CONNECTÉ) =====
             - Servies via LayoutPublic (navbar/footer public)
           */}
           <Route element={<LayoutPublic />}>
@@ -67,7 +71,6 @@ const App: React.FC = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/check-email" element={<CheckEmailPage />} />
-            {/* Garder /verify et /verify-email si nécessaire */}
             <Route path="/verify" element={<VerifyEmailPage />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -91,10 +94,8 @@ const App: React.FC = () => {
           </Route>
 
           {/*
-            ===== PARTIE 2 — ROUTES PROTÉGÉES =====
-            - Nécessitent l'authentification
+            ===== PARTIE 2 — ROUTES PROTÉGÉES (NÉCESSITENT L'AUTHENTIFICATION) =====
             - Servies via Layout (navbar/footer privés) et <Outlet />
-            - ⚠️ On NE redéclare PAS /termos /privacidade /contato ici
           */}
           <Route
             path="/"
@@ -134,6 +135,11 @@ const App: React.FC = () => {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="plans" element={<PlansPage />} />
             <Route path="about" element={<AboutPage />} />
+            
+            {/* Pages du footer pour le mode connecté */}
+            <Route path="termos" element={<TermosPageAuthenticated />} />
+            <Route path="privacidade" element={<PrivacidadePageAuthenticated />} />
+            <Route path="contato" element={<ContatoPageAuthenticated />} />
           </Route>
 
           {/* Catch-all : vers /dashboard ; si non connecté, ProtectedRoute renverra /login */}
