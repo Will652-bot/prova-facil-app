@@ -11,17 +11,23 @@ interface StripeButtonProps {
   cancelUrl: string;
 }
 
-export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUrl, cancelUrl }) => {
-  const { user } = useAuth();
-  const [processing, setProcessing] = useState(false);
+interface AuthUser {
+  id: string;
+  email?: string;
+  pro_subscription_active?: boolean;
+  subscription_expires_at?: string;
+}
 
+export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUrl, cancelUrl }) => {
+  const { user } = useAuth() as { user: AuthUser | null };
+  const [processing, setProcessing] = useState(false);
   const priceId = import.meta.env.VITE_STRIPE_PRICE_ID_PRO;
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
   const needsProSubscription = React.useMemo(() => {
     if (!user) return false;
     if (!user.pro_subscription_active) return true;
     if (!user.subscription_expires_at) return false;
-
     const expirationDate = new Date(user.subscription_expires_at);
     return expirationDate <= new Date();
   }, [user]);
@@ -33,7 +39,17 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
   const handleSubscribe = async () => {
     if (!priceId) {
       console.error('❌ Stripe Price ID manquant (VITE_STRIPE_PRICE_ID_PRO)');
-      toast.error('Configuração Stripe ausente. Contate o suporte.');
+      toast.error('Configuração Stripe ausente. Contate o suporte: provafacil.app@gmail.com', {
+        id: 'stripe-config-error',
+      });
+      return;
+    }
+
+    if (!supabaseUrl) {
+      console.error('❌ Supabase URL manquant (VITE_SUPABASE_URL)');
+      toast.error('Configuração do servidor ausente. Contate o suporte: provafacil.app@gmail.com', {
+        id: 'supabase-config-error',
+      });
       return;
     }
 
@@ -52,7 +68,6 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
     }
 
     setProcessing(true);
-
     try {
       const sessionResult = await supabase.auth.getSession();
       const token = sessionResult.data.session?.access_token;
@@ -61,9 +76,7 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
         throw new Error('Token de sessão não encontrado.');
       }
 
-      // URL da função Edge de Supabase
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-link`;
-
+      const apiUrl = `${supabaseUrl}/functions/v1/create-checkout-link`;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -74,7 +87,7 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
           successUrl,
           cancelUrl,
           customer_email: user.email,
-          priceId, // on envoie explicitement le priceId
+          priceId,
         }),
       });
 
@@ -86,13 +99,10 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
 
       const result = await response.json();
       if (!result.url) throw new Error('URL de checkout não recebida');
-
       window.location.href = result.url;
-    } catch (error: any) {
+    } catch (error: Error) {
       console.error('❌ Erro StripeButton:', error);
-
       toast.dismiss('stripe-error');
-
       if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
         toast.error('Erro de conexão. Verifique sua internet ou use a versão deployada.', {
           id: 'stripe-error',
@@ -112,7 +122,6 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
   if (!needsProSubscription) return null;
 
   if (!priceId) {
-    // Affiche un bouton grisé si la variable n’est pas configurée
     return (
       <Button
         disabled
@@ -136,5 +145,3 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
     </Button>
   );
 };
-
-export default StripeButton;
