@@ -8,10 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
-import TrialPlanBanner from '@/components/TrialPlanBanner';
-
-<TrialPlanBanner />
-
+import TrialPlanBanner from '../components/TrialPlanBanner';
 
 export const PlansPage: React.FC = () => {
   const { user } = useAuth();
@@ -22,14 +19,14 @@ export const PlansPage: React.FC = () => {
     // Check if user comes from successful payment
     const urlParams = new URLSearchParams(window.location.search);
     const paymentSuccess = urlParams.get('payment_success');
-    
+
     if (paymentSuccess === 'true' && user?.pro_subscription_active) {
       setShowSuccessMessage(true);
       toast.success('Parabéns! Seu plano Pro está ativo.');
-      
+
       // Clear URL parameter
       window.history.replaceState({}, document.title, window.location.pathname);
-      
+
       // Hide message after 10 seconds
       setTimeout(() => setShowSuccessMessage(false), 10000);
     }
@@ -258,7 +255,7 @@ export const PlansPage: React.FC = () => {
               <ul className="mt-6 space-y-4">
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-primary-500 mt-0.5" />
-                  <span className="ml-3 text-gray-700">Até 60 alunos</span> {/* MODIFIED: From 30 to 60 alunos */}
+                  <span className="ml-3 text-gray-700">Até 60 alunos</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-primary-500 mt-0.5" />
@@ -288,7 +285,7 @@ export const PlansPage: React.FC = () => {
                 <h3 className="text-2xl font-bold text-gray-900">Pro</h3>
               </div>
               <p className="mt-2 text-gray-500">Para quem busca mais controle, exportação e relatórios avançados.</p>
-              <p className="mt-8 text-4xl font-bold text-gray-900">R$ 9,99</p> {/* MODIFIED: From R$ 4,99 to R$ 9,99 */}
+              <p className="mt-8 text-4xl font-bold text-gray-900">R$ 9,99</p>
               <p className="text-sm text-gray-500">/mês</p>
 
               <ul className="mt-6 space-y-4">
