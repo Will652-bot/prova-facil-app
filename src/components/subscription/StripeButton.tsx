@@ -7,9 +7,12 @@ import toast from 'react-hot-toast';
 
 interface StripeButtonProps {
   className?: string;
+  priceId: string;
+  successUrl: string;
+  cancelUrl: string;
 }
 
-export const StripeButton: React.FC<StripeButtonProps> = ({ className }) => {
+export const StripeButton: React.FC<StripeButtonProps> = ({ className, priceId, successUrl, cancelUrl }) => {
   const { user } = useAuth();
   const [processing, setProcessing] = useState(false);
 
@@ -23,7 +26,7 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className }) => {
   }, [user]);
 
   const isBoltPreview = window.location.hostname.includes('webcontainer-api.io') ||
-                         window.location.hostname.includes('bolt.new');
+                        window.location.hostname.includes('bolt.new');
 
   const handleSubscribe = async () => {
     if (!user?.id || !user?.email) {
@@ -50,9 +53,7 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className }) => {
         throw new Error('Token de sessão não encontrado.');
       }
 
-      // This URL points to your Supabase Edge Function responsible for creating the Stripe Checkout link.
-      // It's crucial that this Edge Function uses the STRIPE_PRICE_ID_PRO environment variable
-      // to select the correct price (R$9.99) when creating the Stripe Checkout Session.
+      // URL de la fonction Edge de Supabase
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-link`;
 
       const response = await fetch(apiUrl, {
@@ -61,9 +62,12 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className }) => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        // The email is passed here, but not the price ID.
-        // The price ID must be handled by the 'create-checkout-link' Edge Function itself.
-        body: JSON.stringify({ customer_email: user.email }),
+        body: JSON.stringify({
+          priceId,
+          successUrl,
+          cancelUrl,
+          customer_email: user.email
+        }),
       });
 
       if (!response.ok) {
@@ -108,7 +112,7 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className }) => {
       className={`bg-primary-600 hover:bg-primary-700 text-white ${className}`}
       disabled={processing}
     >
-      {processing ? 'Processando...' : 'Assinar Plano Pro – R$ 9,99/mês'} {/* MODIFIED: Price updated to R$ 9,99 */}
+      {processing ? 'Processando...' : 'Assinar Plano Pro – R$ 9,99/mês'}
     </Button>
   );
 };
