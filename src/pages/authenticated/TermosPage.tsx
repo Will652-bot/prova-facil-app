@@ -29,7 +29,6 @@ export default function TermosPageAuthenticated() {
       <h2 className="text-xl font-semibold mt-6 mb-2">5. Encerramento da Conta</h2>
       <p className="mb-4">Podemos suspender ou encerrar sua conta a qualquer momento, com ou sem aviso prévio, por qualquer motivo, incluindo, mas não se limitando, a violação destes Termos de Uso. Você pode encerrar sua conta a qualquer momento, entrando em contato conosco. No caso de encerramento, os dados e o conteúdo associados à sua conta podem ser permanentemente excluídos.</p>
       
-      <p className="mt-8 text-center text-sm text-gray-500">Voltar</p>
     </div>
   );
 }
