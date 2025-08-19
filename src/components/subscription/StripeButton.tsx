@@ -84,8 +84,8 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUr
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          successUrl,
-          cancelUrl,
+          success_url: successUrl, // Aligné avec la Edge Function
+          cancel_url: cancelUrl,   // Aligné avec la Edge Function
           customer_email: user.email,
           priceId,
         }),
