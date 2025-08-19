@@ -2,6 +2,7 @@ import React from 'react';
 import { Navbar } from './Navbar';
 import { Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import FooterAuthenticated from '../FooterAuthenticated';
 import { GraduationCap } from 'lucide-react';
 
 export const Layout: React.FC = () => {
@@ -13,23 +14,7 @@ export const Layout: React.FC = () => {
           <Outlet />
         </div>
       </main>
-      <footer className="bg-white border-t border-gray-200 py-4 sm:py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
-              <GraduationCap className="h-6 w-6 mr-2 text-primary-600" />
-              <p className="text-sm text-gray-500">
-                &copy; {new Date().getFullYear()} ProvaFacíl. Todos os direitos reservados.
-              </p>
-            </div>
-            <div className="flex space-x-4">
-              <a href="#" className="text-sm text-gray-500 hover:text-gray-700">Termos</a>
-              <a href="#" className="text-sm text-gray-500 hover:text-gray-700">Privacidade</a>
-              <a href="#" className="text-sm text-gray-500 hover:text-gray-700">Suporte</a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <FooterAuthenticated />
       <Toaster 
         position="top-right"
         toastOptions={{
