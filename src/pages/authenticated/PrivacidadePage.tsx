@@ -12,7 +12,7 @@ export default function PrivacidadePageAuthenticated() {
           como o ProvaFacil coleta, usa, protege e trata os dados dos usuários em
           conformidade com a Lei Geral de Proteção de Dados (LGPD).
         </p>
-        <h2 className="text-2xl font-semibold text-blue-700 mb-4">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">
           1. Dados Coletados
         </h2>
         <p>
@@ -25,7 +25,7 @@ export default function PrivacidadePageAuthenticated() {
           <li>Tipo de professor (por exemplo: Educação Infantil, Ensino Médio, Faculdade, etc.)</li>
           <li>E-mail do professor que o indicou (se aplicável)</li>
         </ul>
-        <h2 className="text-2xl font-semibold text-blue-700 mb-4 mt-6">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4 mt-6">
           2. Finalidade da Coleta de Dados
         </h2>
         <p>
@@ -37,7 +37,7 @@ export default function PrivacidadePageAuthenticated() {
           <li>Para enviar comunicações relevantes sobre o serviço, atualizações e informações sobre o produto.</li>
           <li>Para fins de marketing, como o envio de newsletters ou promoções, com o seu consentimento.</li>
         </ul>
-        <h2 className="text-2xl font-semibold text-blue-700 mb-4 mt-6">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4 mt-6">
           3. Compartilhamento de Dados com Terceiros
         </h2>
         <p>
@@ -45,7 +45,7 @@ export default function PrivacidadePageAuthenticated() {
           comerciais ou outros, sem o seu consentimento explícito. Suas informações
           permanecem estritamente no ecossistema do ProvaFacil.
         </p>
-        <h2 className="text-2xl font-semibold text-blue-700 mb-4 mt-6">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4 mt-6">
           4. Segurança e Proteção de Dados
         </h2>
         <p>
@@ -58,7 +58,7 @@ export default function PrivacidadePageAuthenticated() {
           <li>Acesso restrito e específico a cada espaço de trabalho de professor, garantindo que você tenha
             controle total sobre suas informações e que elas não sejam acessíveis por outros usuários.</li>
         </ul>
-        <h2 className="text-2xl font-semibold text-blue-700 mb-4 mt-6">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4 mt-6">
           5. Direitos do Titular de Dados (LGPD)
         </h2>
         <p>
@@ -75,7 +75,7 @@ export default function PrivacidadePageAuthenticated() {
           Para exercer qualquer um desses direitos, você pode entrar em contato conosco
           através do e-mail de contato abaixo.
         </p>
-        <h2 className="text-2xl font-semibold text-blue-700 mb-4 mt-6">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4 mt-6">
           6. Contato
         </h2>
         <p>
