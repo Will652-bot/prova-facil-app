@@ -1,6 +1,6 @@
 import React from 'react';
 
-const PoliticaPrivacidadePage = () => (
+const PrivacidadePage = () => (
   <div className="p-8 md:p-12 text-gray-700 max-w-4xl mx-auto">
     <h1 className="text-3xl md:text-4xl font-bold text-center text-blue-800 mb-8">
       Política de Privacidade
@@ -11,7 +11,7 @@ const PoliticaPrivacidadePage = () => (
         como o ProvaFacil coleta, usa, protege e trata os dados dos usuários em
         conformidade com a Lei Geral de Proteção de Dados (LGPD).
       </p>
-      <h2 className="text-2xl font-semibold text-blue-700 mb-4">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-4">
         1. Dados Coletados
       </h2>
       <p>
@@ -24,7 +24,7 @@ const PoliticaPrivacidadePage = () => (
         <li>Tipo de professor (por exemplo: Educação Infantil, Ensino Médio, Faculdade, etc.)</li>
         <li>E-mail do professor que o indicou (se aplicável)</li>
       </ul>
-      <h2 className="text-2xl font-semibold text-blue-700 mb-4 mt-6">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-4 mt-6">
         2. Finalidade da Coleta de Dados
       </h2>
       <p>
@@ -36,7 +36,7 @@ const PoliticaPrivacidadePage = () => (
         <li>Para enviar comunicações relevantes sobre o serviço, atualizações e informações sobre o produto.</li>
         <li>Para fins de marketing, como o envio de newsletters ou promoções, com o seu consentimento.</li>
       </ul>
-      <h2 className="text-2xl font-semibold text-blue-700 mb-4 mt-6">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-4 mt-6">
         3. Compartilhamento de Dados com Terceiros
       </h2>
       <p>
@@ -44,20 +44,20 @@ const PoliticaPrivacidadePage = () => (
         comerciais ou outros, sem o seu consentimento explícito. Suas informações
         permanecem estritamente no ecossistema do ProvaFacil.
       </p>
-      <h2 className="text-2xl font-semibold text-blue-700 mb-4 mt-6">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-4 mt-6">
         4. Segurança e Proteção de Dados
       </h2>
       <p>
         Adotamos medidas de segurança técnicas e administrativas para proteger seus
-        dados contra acessos não autorizados, perdas, destruição ou alteração. Isso
-        inclui:
+        dados contra acessos non autorisés, perdas, destruição ou alteração. Isso
+        inclut:
       </p>
       <ul className="list-disc list-inside">
         <li>A criptografia de dados sensíveis para garantir sua confidencialidade.</li>
         <li>Acesso restrito e específico a cada espaço de trabalho de professor, garantindo que você tenha
-          controle total sobre suas informações e que elas não sejam acessíveis por outros usuários.</li>
+          controle total sobre suas informações e que elas não sejam acessibles por otros usuarios.</li>
       </ul>
-      <h2 className="text-2xl font-semibold text-blue-700 mb-4 mt-6">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-4 mt-6">
         5. Direitos do Titular de Dados (LGPD)
       </h2>
       <p>
@@ -74,7 +74,7 @@ const PoliticaPrivacidadePage = () => (
         Para exercer qualquer um desses direitos, você pode entrar em contato conosco
         através do e-mail de contato abaixo.
       </p>
-      <h2 className="text-2xl font-semibold text-blue-700 mb-4 mt-6">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-4 mt-6">
         6. Contato
       </h2>
       <p>
@@ -85,5 +85,4 @@ const PoliticaPrivacidadePage = () => (
   </div>
 );
 
-export default PoliticaPrivacidadePage;
-
+export default PrivacidadePage;
