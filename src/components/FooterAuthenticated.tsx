@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { FaHeart } from 'react-icons/fa';
 import { IoIosArrowUp } from "react-icons/io";
 
-const Footer = () => {
+const FooterAuthenticated = () => {
   // Logique pour le bouton de retour en haut de la page
   const [showScroll, setShowScroll] = React.useState(false);
 
@@ -22,7 +22,7 @@ const Footer = () => {
   React.useEffect(() => {
     window.addEventListener('scroll', checkScrollTop);
     return () => window.removeEventListener('scroll', checkScrollTop);
-  }, []);
+  }, [showScroll]); // Ajout de showScroll dans les dépendances pour éviter les bugs
 
   return (
     <footer className="bg-white text-gray-700 font-sans py-8 mt-12 shadow-inner">
@@ -30,7 +30,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center text-center md:text-left">
           <div className="mb-4 md:mb-0">
             {/* Logo et police adaptés au Dashboard */}
-            <Link to="/" className="flex items-center space-x-2">
+            <Link to="/dashboard" className="flex items-center space-x-2">
               <img src="/logo.svg" alt="ProvaFacil Logo" className="h-8 w-auto" />
               <h4 className="text-xl font-bold text-blue-800">ProvaFacil</h4>
             </Link>
@@ -62,4 +62,4 @@ const Footer = () => {
   );
 };
 
-export default Footer;
+export default FooterAuthenticated;
