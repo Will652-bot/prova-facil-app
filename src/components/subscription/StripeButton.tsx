@@ -7,12 +7,11 @@ import toast from 'react-hot-toast';
 
 interface StripeButtonProps {
   className?: string;
-  priceId: string;
   successUrl: string;
   cancelUrl: string;
 }
 
-export const StripeButton: React.FC<StripeButtonProps> = ({ className, priceId, successUrl, cancelUrl }) => {
+export const StripeButton: React.FC<StripeButtonProps> = ({ className, successUrl, cancelUrl }) => {
   const { user } = useAuth();
   const [processing, setProcessing] = useState(false);
 
@@ -63,7 +62,6 @@ export const StripeButton: React.FC<StripeButtonProps> = ({ className, priceId, 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          priceId,
           successUrl,
           cancelUrl,
           customer_email: user.email
