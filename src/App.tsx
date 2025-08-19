@@ -53,9 +53,9 @@ import PublicPrivacyPage from './pages/PrivacidadePage';
 import PublicContactPage from './pages/ContatoPage';
 
 // Pages pour les utilisateurs connectés
-import TermosPageAuthenticated from 'src/pages/authenticated/TermosPageAuthenticated';
-import PrivacidadePageAuthenticated from 'src/pages/authenticated/PrivacidadePageAuthenticated';
-import ContatoPageAuthenticated from 'src/pages/authenticated/ContatoPageAuthenticated';
+import TermosPageAuthenticated from 'src/pages/authenticated/TermosPage';
+import PrivacidadePageAuthenticated from 'src/pages/authenticated/PrivacidadePage';
+import ContatoPageAuthenticated from 'src/pages/authenticated/ContatoPage';
 
 const App: React.FC = () => {
   return (
@@ -137,9 +137,9 @@ const App: React.FC = () => {
             <Route path="about" element={<AboutPage />} />
             
             {/* Pages du footer pour le mode connecté */}
-            <Route path="termos" element={<TermosPageAuthenticated />} />
-            <Route path="privacidade" element={<PrivacidadePageAuthenticated />} />
-            <Route path="contato" element={<ContatoPageAuthenticated />} />
+            <Route path="termos" element={<TermosPage />} />
+            <Route path="privacidade" element={<PrivacidadePage />} />
+            <Route path="contato" element={<ContatoPage />} />
           </Route>
 
           {/* Catch-all : vers /dashboard ; si non connecté, ProtectedRoute renverra /login */}
