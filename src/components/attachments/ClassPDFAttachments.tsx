@@ -8,18 +8,22 @@ import toast from 'react-hot-toast';
 interface ClassPDFAttachmentsProps {
   classId: string;
   className: string;
+  evaluationTitleId: string; // ✅ ajout pour lier correctement au título
 }
 
 interface AttachmentRecord {
   id: string;
-  class_id: string;
   file_path: string;
   created_at: string;
+  teacher_id: string;
+  class_id: string;
+  evaluation_title_id: string;
 }
 
 export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
   classId,
-  className
+  className,
+  evaluationTitleId
 }) => {
   const { user } = useAuth();
   const [attachment, setAttachment] = useState<AttachmentRecord | null>(null);
@@ -32,7 +36,7 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
 
   useEffect(() => {
     fetchAttachment();
-  }, [classId]);
+  }, [classId, evaluationTitleId]);
 
   const fetchAttachment = async () => {
     try {
@@ -40,12 +44,12 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
       const { data, error } = await supabase
         .from('evaluation_attachments')
         .select('*')
-        .eq('class_id', classId)
         .eq('teacher_id', user?.id)
+        .eq('class_id', classId)
+        .eq('evaluation_title_id', evaluationTitleId)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
-
+      if (error && error.code !== 'PGRST116') throw error;
       setAttachment(data);
     } catch (error) {
       console.error('Error fetching attachment:', error);
@@ -86,7 +90,7 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const sanitizedClassName = className.replace(/[^a-zA-Z0-9]/g, '_');
       const filename = `${sanitizedClassName}_${timestamp}.pdf`;
-      const filePath = `${classId}/${filename}`;
+      const filePath = `${user.id}/${evaluationTitleId}/${filename}`; // ✅ chemin unique
 
       if (attachment) {
         await supabase.storage
@@ -108,8 +112,9 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
       if (storageError) throw storageError;
 
       const newAttachmentData = {
-        class_id: classId,
         teacher_id: user.id,
+        class_id: classId,
+        evaluation_title_id: evaluationTitleId,
         file_path: filePath
       };
 
@@ -135,7 +140,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
       }
 
       toast.success('Arquivo anexado com sucesso');
-        
       event.target.value = '';
     } catch (error: any) {
       console.error('Error uploading file:', error);
@@ -173,33 +177,25 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
     const confirmed = window.confirm(
       'Tem certeza que deseja remover este anexo? Esta ação não pode ser desfeita.'
     );
-
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       setLoading(true);
 
-      // Force une requête unique pour contourner le cache du navigateur
-      const timestamp = new Date().getTime();
       const { error: storageError } = await supabase.storage
         .from('evaluation-attachments')
-        .remove([`${attachment.file_path}?v=${timestamp}`]);
-
-      if (storageError) {
-        throw storageError;
-      }
+        .remove([attachment.file_path]);
+      if (storageError) throw storageError;
 
       const { error: dbError } = await supabase
         .from('evaluation_attachments')
         .delete()
+        .eq('id', attachment.id)
+        .eq('teacher_id', user?.id)
         .eq('class_id', classId)
-        .eq('teacher_id', user?.id);
+        .eq('evaluation_title_id', evaluationTitleId);
 
-      if (dbError) {
-        throw dbError;
-      }
+      if (dbError) throw dbError;
 
       setAttachment(null);
       toast.success('Anexo removido com sucesso');
@@ -229,7 +225,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
           <FileText className="h-4 w-4 mr-2" />
           Anexo PDF para {className}
         </h4>
-        
         {attachment && (
           <div className="flex items-center text-xs text-green-600">
             <CheckCircle className="h-3 w-3 mr-1" />
@@ -238,7 +233,7 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
         )}
       </div>
 
-      {/* File Upload Section */}
+      {/* Upload */}
       <div className="space-y-3">
         <div className="relative">
           {isPro ? (
@@ -270,7 +265,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
           )}
         </div>
 
-        {/* Upload Progress */}
         {uploading && uploadProgress > 0 && (
           <div className="space-y-1">
             <div className="w-full bg-gray-200 rounded-full h-2">
@@ -286,7 +280,7 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
         )}
       </div>
 
-      {/* Attachment Display */}
+      {/* Attachment */}
       {attachment && (
         <div className="bg-white border border-gray-200 rounded-md p-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between">
@@ -301,7 +295,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
                 </p>
               </div>
             </div>
-            
             <div className="flex items-center space-x-2">
               <Button
                 variant="ghost"
@@ -327,7 +320,7 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
         </div>
       )}
 
-      {/* No Attachment State */}
+      {/* Empty state */}
       {!attachment && !uploading && (
         <div className="text-center py-2">
           <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
