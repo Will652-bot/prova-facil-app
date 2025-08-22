@@ -5,25 +5,25 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
-interface ClassPDFAttachmentsProps {
-  classId: string;
-  className: string;
-  evaluationTitleId: string; // ✅ ajout pour lier correctement au título
+// L'interface de props a été simplifiée pour ne concerner que les titres d'évaluation
+interface EvaluationAttachmentProps {
+  evaluationTitleId: string;
+  evaluationTitle: string;
 }
 
+// L'interface du record de pièce jointe est corrigée pour ne pas avoir de class_id
 interface AttachmentRecord {
   id: string;
   file_path: string;
   created_at: string;
   teacher_id: string;
-  class_id: string;
   evaluation_title_id: string;
 }
 
-export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
-  classId,
-  className,
-  evaluationTitleId
+// Le composant est renommé pour éviter toute confusion future
+export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
+  evaluationTitleId,
+  evaluationTitle
 }) => {
   const { user } = useAuth();
   const [attachment, setAttachment] = useState<AttachmentRecord | null>(null);
@@ -31,12 +31,11 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // ✅ Détection du plan Pro
   const isPro = user?.current_plan === 'pro' || user?.pro_subscription_active === true;
 
   useEffect(() => {
     fetchAttachment();
-  }, [classId, evaluationTitleId]);
+  }, [evaluationTitleId]);
 
   const fetchAttachment = async () => {
     try {
@@ -45,7 +44,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
         .from('evaluation_attachments')
         .select('*')
         .eq('teacher_id', user?.id)
-        .eq('class_id', classId)
         .eq('evaluation_title_id', evaluationTitleId)
         .maybeSingle();
 
@@ -88,9 +86,9 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
       setUploadProgress(0);
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const sanitizedClassName = className.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `${sanitizedClassName}_${timestamp}.pdf`;
-      const filePath = `${user.id}/${evaluationTitleId}/${filename}`; // ✅ chemin unique
+      const sanitizedTitle = evaluationTitle.replace(/[^a-zA-Z0-9]/g, '_');
+      const filename = `${sanitizedTitle}_${timestamp}.pdf`;
+      const filePath = `${user.id}/${evaluationTitleId}/${filename}`;
 
       if (attachment) {
         await supabase.storage
@@ -111,9 +109,9 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
 
       if (storageError) throw storageError;
 
+      // ✅ CORRECTION: L'objet d'insertion ne contient que les données nécessaires
       const newAttachmentData = {
         teacher_id: user.id,
-        class_id: classId,
         evaluation_title_id: evaluationTitleId,
         file_path: filePath
       };
@@ -187,12 +185,12 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
         .remove([attachment.file_path]);
       if (storageError) throw storageError;
 
+      // Correction: La suppression n'utilise plus class_id
       const { error: dbError } = await supabase
         .from('evaluation_attachments')
         .delete()
         .eq('id', attachment.id)
         .eq('teacher_id', user?.id)
-        .eq('class_id', classId)
         .eq('evaluation_title_id', evaluationTitleId);
 
       if (dbError) throw dbError;
@@ -223,7 +221,7 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-medium text-gray-700 flex items-center">
           <FileText className="h-4 w-4 mr-2" />
-          Anexo PDF para {className}
+          Anexo PDF para {evaluationTitle}
         </h4>
         {attachment && (
           <div className="flex items-center text-xs text-green-600">
@@ -233,7 +231,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
         )}
       </div>
 
-      {/* Upload */}
       <div className="space-y-3">
         <div className="relative">
           {isPro ? (
@@ -280,7 +277,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
         )}
       </div>
 
-      {/* Attachment */}
       {attachment && (
         <div className="bg-white border border-gray-200 rounded-md p-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between">
@@ -291,7 +287,7 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
                   {attachment.file_path.split('/').pop()}
                 </p>
                 <p className="text-xs text-gray-500">
-                  Adicionado em: {new Date(attachment.created_at).toLocaleDateString('pt-BR')}
+                  Adicionado em: {new Date(attachment.created_at || '').toLocaleDateString('pt-BR')}
                 </p>
               </div>
             </div>
@@ -320,12 +316,11 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
         </div>
       )}
 
-      {/* Empty state */}
       {!attachment && !uploading && (
         <div className="text-center py-2">
           <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
           <p className="text-sm text-gray-500">
-            Nenhum arquivo PDF anexado para esta turma
+            Nenhum arquivo PDF anexado para {evaluationTitle}
           </p>
           {!isPro && (
             <p className="text-xs text-blue-600 mt-1">
