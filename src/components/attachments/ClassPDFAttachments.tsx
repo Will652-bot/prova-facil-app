@@ -12,9 +12,9 @@ interface ClassPDFAttachmentsProps {
 
 interface AttachmentRecord {
   id: string;
-  class_id: string;
   file_path: string;
   created_at: string;
+  teacher_id: string;
 }
 
 export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
@@ -40,11 +40,10 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
       const { data, error } = await supabase
         .from('evaluation_attachments')
         .select('*')
-        .eq('class_id', classId)
         .eq('teacher_id', user?.id)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
+      if (error && error.code !== 'PGRST116') throw error;
 
       setAttachment(data);
     } catch (error) {
@@ -108,7 +107,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
       if (storageError) throw storageError;
 
       const newAttachmentData = {
-        class_id: classId,
         teacher_id: user.id,
         file_path: filePath
       };
@@ -181,25 +179,19 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
     try {
       setLoading(true);
 
-      // Force une requête unique pour contourner le cache du navigateur
-      const timestamp = new Date().getTime();
       const { error: storageError } = await supabase.storage
         .from('evaluation-attachments')
-        .remove([`${attachment.file_path}?v=${timestamp}`]);
+        .remove([attachment.file_path]);
 
-      if (storageError) {
-        throw storageError;
-      }
+      if (storageError) throw storageError;
 
       const { error: dbError } = await supabase
         .from('evaluation_attachments')
         .delete()
-        .eq('class_id', classId)
+        .eq('id', attachment.id)
         .eq('teacher_id', user?.id);
 
-      if (dbError) {
-        throw dbError;
-      }
+      if (dbError) throw dbError;
 
       setAttachment(null);
       toast.success('Anexo removido com sucesso');
@@ -238,7 +230,7 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
         )}
       </div>
 
-      {/* File Upload Section */}
+      {/* Upload Section */}
       <div className="space-y-3">
         <div className="relative">
           {isPro ? (
@@ -270,7 +262,6 @@ export const ClassPDFAttachments: React.FC<ClassPDFAttachmentsProps> = ({
           )}
         </div>
 
-        {/* Upload Progress */}
         {uploading && uploadProgress > 0 && (
           <div className="space-y-1">
             <div className="w-full bg-gray-200 rounded-full h-2">
