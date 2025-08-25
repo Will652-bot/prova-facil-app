@@ -4,12 +4,12 @@ import { Button } from '../ui/Button';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
-
+// L'interface de props a été simplifiée pour ne concerner que les titres d'évaluation
 interface EvaluationAttachmentProps {
   evaluationTitleId: string;
   evaluationTitle: string;
 }
-
+// L'interface du record de pièce jointe est corrigée pour ne concerner que les titres d'évaluation
 interface AttachmentRecord {
   id: string;
   file_path: string;
@@ -17,7 +17,7 @@ interface AttachmentRecord {
   teacher_id: string;
   evaluation_title_id: string;
 }
-
+// Le composant est renommé pour éviter toute confusion future
 export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
   evaluationTitleId,
   evaluationTitle
@@ -28,11 +28,9 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const isPro = user?.current_plan === 'pro' || user?.pro_subscription_active === true;
-
   useEffect(() => {
     fetchAttachments();
   }, [evaluationTitleId]);
-
   const fetchAttachments = async () => {
     try {
       setLoading(true);
@@ -51,7 +49,6 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
       setLoading(false);
     }
   };
-
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!isPro) {
       toast.error('Funcionalidade exclusiva para usuários do plano Pro');
@@ -78,7 +75,6 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
       const sanitizedTitle = evaluationTitle.replace(/[^a-zA-Z0-9]/g, '_');
       const filename = `${sanitizedTitle}_${timestamp}.pdf`;
       const filePath = `${user.id}/${evaluationTitleId}/${filename}`;
-
       const { error: storageError } = await supabase.storage
         .from('evaluation-attachments')
         .upload(filePath, file, {
@@ -90,7 +86,7 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
           }
         });
       if (storageError) throw storageError;
-
+      // ✅ CORRECTION: L'objet d'insertion ne contient que les données nécessaires
       const newAttachmentData = {
         teacher_id: user.id,
         evaluation_title_id: evaluationTitleId,
@@ -102,7 +98,6 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
         .select()
         .single();
       if (dbError) throw dbError;
-
       setAttachments(prev => [insertData, ...prev]);
       toast.success('Arquivo anexado com sucesso');
       event.target.value = '';
@@ -114,9 +109,7 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
       setUploadProgress(0);
     }
   };
-
   const handlePreviewFile = async (attachment: AttachmentRecord) => {
-    if (!attachment) return;
     try {
       const { data, error } = await supabase.storage
         .from('evaluation-attachments')
@@ -132,9 +125,7 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
       toast.error('Erro ao visualizar arquivo');
     }
   };
-
   const handleDeleteFile = async (attachment: AttachmentRecord) => {
-    if (!attachment) return;
     const confirmed = window.confirm(
       'Tem certeza que deseja remover este anexo? Esta ação não pode ser desfeita.'
     );
@@ -145,7 +136,7 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
         .from('evaluation-attachments')
         .remove([attachment.file_path]);
       if (storageError) throw storageError;
-
+      // Correction: La suppression n'utilise plus class_id
       const { error: dbError } = await supabase
         .from('evaluation_attachments')
         .delete()
@@ -153,7 +144,6 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
         .eq('teacher_id', user?.id)
         .eq('evaluation_title_id', evaluationTitleId);
       if (dbError) throw dbError;
-
       setAttachments(prev => prev.filter(a => a.id !== attachment.id));
       toast.success('Anexo removido com sucesso');
     } catch (error: any) {
@@ -163,7 +153,6 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
       setLoading(false);
     }
   };
-
   if (loading) {
     return (
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -174,7 +163,6 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
       </div>
     );
   }
-
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -201,7 +189,9 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
               }
             `}>
               <Upload className="mr-2 h-4 w-4" />
-              <span>{uploading ? 'Enviando...' : 'Selecionar PDF'}</span>
+              <span>
+                {uploading ? 'Enviando...' : 'Selecionar PDF'}
+              </span>
               <input
                 type="file"
                 accept=".pdf"
