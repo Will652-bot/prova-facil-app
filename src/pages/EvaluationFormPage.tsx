@@ -579,13 +579,13 @@ export const EvaluationFormPage: React.FC = () => {
     }
 
     if (!selectedCriterion || !selectedCriterion.id) {
-      toast.error('Selecione un critère valide.');
+      toast.error('Selecione um critério válido.');
       return false;
     }
 
     const hasCorrectCriterionId = evaluations.every(evalItem => evalItem.criterion_id === selectedCriterion.id);
     if (!hasCorrectCriterionId) {
-      toast.error('O ID do critère não corresponde para todas as avaliações. Por favor, selecione o critère novamente.');
+      toast.error('O ID do critério não corresponde para todas as avaliações. Por favor, selecione o critério novamente.');
       return false;
     }
 
@@ -769,8 +769,8 @@ export const EvaluationFormPage: React.FC = () => {
         </h1>
         <p className="mt-1 text-gray-500">
           {isEditing
-            ? 'Atualize as informations des évaluations'
-            : 'Preencha as informations pour créer múltiples évaluations'}
+            ? 'Atualizar informações de avaliação'
+            : 'Preencha as informações para criar múltiplas avaliações'}
         </p>
       </div>
 
@@ -832,7 +832,7 @@ export const EvaluationFormPage: React.FC = () => {
               </select>
               {selectedEvaluationTitleId && availableCriteria.length < criteria.length && (
                 <p className="text-xs text-blue-600 mt-1">
-                  ℹ️ Critères filtrés baseados no título selecionado
+                  ℹ️ Critérios filtrados baseados no título selecionado
                 </p>
               )}
             </div>
@@ -867,7 +867,7 @@ export const EvaluationFormPage: React.FC = () => {
                 required
                 disabled={isEditing && evaluations.length > 0}
               >
-                <option value="">Selecione un critère</option>
+                <option value="">Selecione um critério</option>
                 {availableCriteria.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} ({c.min_value} - {c.max_value})
@@ -876,14 +876,14 @@ export const EvaluationFormPage: React.FC = () => {
               </select>
               {availableCriteria.length === 0 && (
                 <p className="text-sm text-error-600">
-                  Nenhum critère encontrado.{' '}
+                  Nenhum critério encontrado.{' '}
                   <Button
                     variant="ghost"
                     size="sm"
                     type="button"
                     onClick={() => navigate('/criteria/new')}
                   >
-                    Criar critère
+                    Criar critério
                   </Button>
                 </p>
               )}
@@ -1010,7 +1010,7 @@ export const EvaluationFormPage: React.FC = () => {
                                 rows={2}
                                 value={evaluation.comments}
                                 onChange={(e) => handleCommentChange(evaluation.student_id, e.target.value)}
-                                placeholder="Adicionar commentaire..."
+                                placeholder="Adicionar comentário..."
                               />
                             </td>
                           </tr>
@@ -1046,7 +1046,7 @@ export const EvaluationFormPage: React.FC = () => {
                 Cancelar
               </Button>
               <Button type="submit" isLoading={loading}>
-                {isEditing ? 'Salvar Alterações' : 'Créer Avaliações'}
+                {isEditing ? 'Salvar Alterações' : 'Criar Avaliações'}
               </Button>
             </div>
           </div>
