@@ -30,7 +30,7 @@ import { CriteriaPage } from './pages/CriteriaPage';
 import { CriteriaFormPage } from './pages/CriteriaFormPage';
 import { EvaluationTitlesPage } from './pages/EvaluationTitlesPage';
 import { EvaluationCriteriaPage } from './pages/EvaluationCriteriaPage';
-import { EvaluationsPage } from './pages/EvaluationsPage';
+import EvaluationsPage from './pages/EvaluationsPage';
 import { EvaluationFormPage } from './pages/EvaluationFormPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { ConditionalFormattingPage } from './pages/ConditionalFormattingPage';
