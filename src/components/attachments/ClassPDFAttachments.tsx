@@ -5,13 +5,11 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
-// L'interface de props a été simplifiée pour ne concerner que les titres d'évaluation
 interface EvaluationAttachmentProps {
   evaluationTitleId: string;
   evaluationTitle: string;
 }
 
-// L'interface du record de pièce jointe est corrigée pour ne pas avoir de class_id
 interface AttachmentRecord {
   id: string;
   file_path: string;
@@ -20,24 +18,22 @@ interface AttachmentRecord {
   evaluation_title_id: string;
 }
 
-// Le composant est renommé pour éviter toute confusion future
 export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
   evaluationTitleId,
   evaluationTitle
 }) => {
   const { user } = useAuth();
-  const [attachment, setAttachment] = useState<AttachmentRecord | null>(null);
+  const [attachments, setAttachments] = useState<AttachmentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-
   const isPro = user?.current_plan === 'pro' || user?.pro_subscription_active === true;
 
   useEffect(() => {
-    fetchAttachment();
+    fetchAttachments();
   }, [evaluationTitleId]);
 
-  const fetchAttachment = async () => {
+  const fetchAttachments = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -45,13 +41,12 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
         .select('*')
         .eq('teacher_id', user?.id)
         .eq('evaluation_title_id', evaluationTitleId)
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') throw error;
-      setAttachment(data);
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setAttachments(data || []);
     } catch (error) {
-      console.error('Error fetching attachment:', error);
-      toast.error('Erro ao carregar anexo');
+      console.error('Error fetching attachments:', error);
+      toast.error('Erro ao carregar anexos');
     } finally {
       setLoading(false);
     }
@@ -62,39 +57,27 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
       toast.error('Funcionalidade exclusiva para usuários do plano Pro');
       return;
     }
-
     const file = event.target.files?.[0];
     if (!file) return;
-
     if (!file.type.includes('pdf')) {
       toast.error('Apenas arquivos PDF são permitidos');
       return;
     }
-
     if (file.size > 10 * 1024 * 1024) {
       toast.error('O arquivo deve ter no máximo 10MB');
       return;
     }
-
     if (!user?.id) {
       toast.error('Usuário não autenticado');
       return;
     }
-
     try {
       setUploading(true);
       setUploadProgress(0);
-
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const sanitizedTitle = evaluationTitle.replace(/[^a-zA-Z0-9]/g, '_');
       const filename = `${sanitizedTitle}_${timestamp}.pdf`;
       const filePath = `${user.id}/${evaluationTitleId}/${filename}`;
-
-      if (attachment) {
-        await supabase.storage
-          .from('evaluation-attachments')
-          .remove([attachment.file_path]);
-      }
 
       const { error: storageError } = await supabase.storage
         .from('evaluation-attachments')
@@ -106,37 +89,21 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
             setUploadProgress(percent);
           }
         });
-
       if (storageError) throw storageError;
 
-      // ✅ CORRECTION: L'objet d'insertion ne contient que les données nécessaires
       const newAttachmentData = {
         teacher_id: user.id,
         evaluation_title_id: evaluationTitleId,
         file_path: filePath
       };
+      const { data: insertData, error: dbError } = await supabase
+        .from('evaluation_attachments')
+        .insert(newAttachmentData)
+        .select()
+        .single();
+      if (dbError) throw dbError;
 
-      if (attachment?.id) {
-        const { data: updateData, error: dbError } = await supabase
-          .from('evaluation_attachments')
-          .update(newAttachmentData)
-          .eq('id', attachment.id)
-          .select()
-          .single();
-
-        if (dbError) throw dbError;
-        setAttachment(updateData);
-      } else {
-        const { data: insertData, error: dbError } = await supabase
-          .from('evaluation_attachments')
-          .insert(newAttachmentData)
-          .select()
-          .single();
-
-        if (dbError) throw dbError;
-        setAttachment(insertData);
-      }
-
+      setAttachments(prev => [insertData, ...prev]);
       toast.success('Arquivo anexado com sucesso');
       event.target.value = '';
     } catch (error: any) {
@@ -148,16 +115,13 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
     }
   };
 
-  const handlePreviewFile = async () => {
+  const handlePreviewFile = async (attachment: AttachmentRecord) => {
     if (!attachment) return;
-
     try {
       const { data, error } = await supabase.storage
         .from('evaluation-attachments')
         .createSignedUrl(attachment.file_path, 60);
-
       if (error) throw error;
-
       if (data?.signedUrl) {
         window.open(data.signedUrl, '_blank');
       } else {
@@ -169,33 +133,28 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
     }
   };
 
-  const handleDeleteFile = async () => {
+  const handleDeleteFile = async (attachment: AttachmentRecord) => {
     if (!attachment) return;
-
     const confirmed = window.confirm(
       'Tem certeza que deseja remover este anexo? Esta ação não pode ser desfeita.'
     );
     if (!confirmed) return;
-
     try {
       setLoading(true);
-
       const { error: storageError } = await supabase.storage
         .from('evaluation-attachments')
         .remove([attachment.file_path]);
       if (storageError) throw storageError;
 
-      // Correction: La suppression n'utilise plus class_id
       const { error: dbError } = await supabase
         .from('evaluation_attachments')
         .delete()
         .eq('id', attachment.id)
         .eq('teacher_id', user?.id)
         .eq('evaluation_title_id', evaluationTitleId);
-
       if (dbError) throw dbError;
 
-      setAttachment(null);
+      setAttachments(prev => prev.filter(a => a.id !== attachment.id));
       toast.success('Anexo removido com sucesso');
     } catch (error: any) {
       console.error('Error deleting file:', error);
@@ -221,31 +180,28 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-medium text-gray-700 flex items-center">
           <FileText className="h-4 w-4 mr-2" />
-          Anexo PDF para {evaluationTitle}
+          Anexos PDF para {evaluationTitle}
         </h4>
-        {attachment && (
+        {attachments.length > 0 && (
           <div className="flex items-center text-xs text-green-600">
             <CheckCircle className="h-3 w-3 mr-1" />
-            Arquivo anexado
+            {attachments.length} arquivo(s) anexado(s)
           </div>
         )}
       </div>
-
       <div className="space-y-3">
         <div className="relative">
           {isPro ? (
             <label className={`
-              flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium 
+              flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium
               border border-gray-300 rounded-md shadow-sm transition-colors
-              ${uploading || loading 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+              ${uploading || loading
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
               }
             `}>
               <Upload className="mr-2 h-4 w-4" />
-              <span>
-                {uploading ? 'Enviando...' : attachment ? 'Substituir PDF' : 'Selecionar PDF'}
-              </span>
+              <span>{uploading ? 'Enviando...' : 'Selecionar PDF'}</span>
               <input
                 type="file"
                 accept=".pdf"
@@ -261,12 +217,11 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
             </div>
           )}
         </div>
-
         {uploading && uploadProgress > 0 && (
           <div className="space-y-1">
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
+              <div
+                className="bg-primary-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${uploadProgress}%` }}
               ></div>
             </div>
@@ -276,47 +231,48 @@ export const ClassPDFAttachments: React.FC<EvaluationAttachmentProps> = ({
           </div>
         )}
       </div>
-
-      {attachment && (
-        <div className="bg-white border border-gray-200 rounded-md p-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-            <div className="flex items-center space-x-3 mb-3 sm:mb-0">
-              <FileText className="h-5 w-5 text-red-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-900">
-                  {attachment.file_path.split('/').pop()}
-                </p>
-                <p className="text-xs text-gray-500">
-                  Adicionado em: {new Date(attachment.created_at || '').toLocaleDateString('pt-BR')}
-                </p>
+      {attachments.length > 0 ? (
+        <div className="space-y-2">
+          {attachments.map((attachment) => (
+            <div key={attachment.id} className="bg-white border border-gray-200 rounded-md p-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between">
+                <div className="flex items-center space-x-3 mb-3 sm:mb-0">
+                  <FileText className="h-5 w-5 text-red-500" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {attachment.file_path.split('/').pop()}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Adicionado em: {new Date(attachment.created_at || '').toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handlePreviewFile(attachment)}
+                    leftIcon={<Eye className="h-4 w-4" />}
+                    disabled={uploading}
+                  >
+                    Visualizar
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteFile(attachment)}
+                    leftIcon={<Trash2 className="h-4 w-4" />}
+                    disabled={uploading}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    Remover
+                  </Button>
+                </div>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handlePreviewFile}
-                leftIcon={<Eye className="h-4 w-4" />}
-                disabled={uploading}
-              >
-                Visualizar
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDeleteFile}
-                leftIcon={<Trash2 className="h-4 w-4" />}
-                disabled={uploading}
-                className="text-red-600 hover:text-red-700"
-              >
-                Remover
-              </Button>
-            </div>
-          </div>
+          ))}
         </div>
-      )}
-
-      {!attachment && !uploading && (
+      ) : !uploading && (
         <div className="text-center py-2">
           <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
           <p className="text-sm text-gray-500">
