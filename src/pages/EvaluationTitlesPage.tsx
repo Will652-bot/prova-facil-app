@@ -658,8 +658,9 @@ export const EvaluationTitlesPage: React.FC = () => {
     setUploadError(prev => ({...prev, [titleId]: ''}));
 
     try {
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const fileName = `${user.id}/${titleId}/${timestamp}_${file.name}`;
+      // ✅ CORRECTION: Nettoyage du nom de fichier pour éviter les caractères invalides
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.\-]/g, '_');
+      const fileName = `${user.id}/${titleId}/${uuidv4()}-${sanitizedFileName}`;
 
       const { error: storageUploadError } = await supabase.storage
         .from('evaluation-attachments')
