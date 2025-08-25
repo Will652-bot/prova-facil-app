@@ -8,7 +8,6 @@ import { FileText, Eye, Download, AlertTriangle, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
-// import { v4 as uuidv4 } from 'uuid'; // <-- ASSUREZ-VOUS QUE CETTE LIGNE EST COMMENTÉE OU SUPPRIMÉE
 
 // Interface for evaluation titles
 interface EvaluationTitle {
@@ -40,7 +39,10 @@ interface StudentEvaluationData {
   comments: string;
 }
 
-export const EvaluationFormPage: React.FC = () => {
+// Correction: Le composant principal est maintenant exporté par défaut
+// pour correspondre à l'importation 'EvaluationsPage' utilisée dans App.tsx.
+// C'est la source de l'erreur de build.
+const EvaluationsPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -770,7 +772,7 @@ export const EvaluationFormPage: React.FC = () => {
         <p className="mt-1 text-gray-500">
           {isEditing
             ? 'Atualize as informations des évaluations'
-            : 'Preencha as informations pour créer múltiples évaluations'}
+            : 'Preencha as informations pour créer multiples évaluations'}
         </p>
       </div>
 
@@ -1064,3 +1066,6 @@ export const EvaluationFormPage: React.FC = () => {
     </div>
   );
 };
+
+// Exportation par défaut pour correspondre à l'importation 'EvaluationsPage' dans App.tsx
+export default EvaluationsPage;
