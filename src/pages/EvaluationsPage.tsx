@@ -769,8 +769,8 @@ export const EvaluationFormPage: React.FC = () => {
         </h1>
         <p className="mt-1 text-gray-500">
           {isEditing
-            ? 'Atualize as informations des évaluations'
-            : 'Preencha as informations pour créer múltiples évaluations'}
+            ? 'Atualiza informações de avaliação'
+            : 'Preencha as informações para criar múltiplas avaliações'}
         </p>
       </div>
 
@@ -883,7 +883,7 @@ export const EvaluationFormPage: React.FC = () => {
                     type="button"
                     onClick={() => navigate('/criteria/new')}
                   >
-                    Criar critère
+                    Criar critérios
                   </Button>
                 </p>
               )}
